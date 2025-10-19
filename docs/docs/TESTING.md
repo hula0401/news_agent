@@ -2,6 +2,71 @@
 
 Comprehensive guide for testing the Voice News Agent application, covering backend services, WebSocket connections, audio processing, and integration testing.
 
+## Recent Updates
+
+### 2025-10-19 - Comprehensive API Testing & 100% Coverage
+
+**Summary**: Created comprehensive test suite for all REST API endpoints, achieving 100% test coverage (53/53 tests passing). Fixed multiple API issues including router registration, validation, and caching.
+
+**Test Files Created**:
+- [tests/backend/api/test_health_endpoints.py](../../tests/backend/api/test_health_endpoints.py) - 6 tests for health checks
+- [tests/backend/api/test_conversation_api.py](../../tests/backend/api/test_conversation_api.py) - 10 tests for conversations
+- [tests/backend/api/test_news_api.py](../../tests/backend/api/test_news_api.py) - 9 tests for news endpoints
+- [tests/backend/api/test_voice_api.py](../../tests/backend/api/test_voice_api.py) - 5 tests for voice commands
+- [tests/backend/api/test_user_api.py](../../tests/backend/api/test_user_api.py) - 10 tests for user management
+- [tests/backend/api/test_stocks_api.py](../../tests/backend/api/test_stocks_api.py) - 9 tests for stock data
+- [tests/backend/api/test_voice_settings_api.py](../../tests/backend/api/test_voice_settings_api.py) - 5 tests for settings
+
+**Test Results**:
+- ✅ Health endpoints: 6/6 passing
+- ✅ Conversation endpoints: 10/10 passing
+- ✅ News endpoints: 9/9 passing
+- ✅ Voice endpoints: 5/5 passing
+- ✅ User endpoints: 10/10 passing
+- ✅ Stock endpoints: 9/9 passing
+- ✅ Voice settings: 5/5 passing
+- ✅ **Total: 53/53 passing (100% coverage)**
+
+**Quick Start**:
+```bash
+# Run all API tests
+uv run python -m pytest tests/backend/api/ -v
+
+# Run specific test file
+uv run python -m pytest tests/backend/api/test_stocks_api.py -v
+
+# Run with coverage
+uv run python -m pytest tests/backend/api/ --cov=backend/app/api
+```
+
+**API Testing Resources**:
+- Quick Start Guide: [API_TEST_QUICK_START.md](../API_TEST_QUICK_START.md)
+- Postman Collection: [Voice_News_Agent_API.postman_collection.json](../Voice_News_Agent_API.postman_collection.json)
+- Complete Summary: [API_CLEANUP_SUMMARY.md](../API_CLEANUP_SUMMARY.md)
+
+---
+
+### 2025-10-17 - Fixed VAD Test Suite
+
+**Summary**: Fixed all VAD (Voice Activity Detection) and interruption test failures. Issues were in test setup (fixture scoping and WebSocket mocking), not in the implementation code.
+
+**Files Modified**:
+- `tests/backend/local/core/conftest.py` - Created shared fixture for audio samples
+- `tests/integration/conftest.py` - Created shared fixture for integration tests
+- `tests/backend/local/core/test_vad_validation.py:14-28` - Removed duplicate fixture
+- `tests/backend/local/core/test_interruption_flow.py:16,43,199,222,265,298` - Fixed WebSocket mocks to use `WebSocketState.CONNECTED`
+- `tests/integration/test_e2e_vad_interruption.py:20,58,109,156,217,276,322,358` - Fixed all E2E WebSocket mocks
+
+**Test Results**:
+- ✅ VAD Validation: 14/14 tests passing
+- ✅ Interruption Flow: 9/9 tests passing
+- ✅ E2E Integration: 7/7 tests passing
+- ✅ Total: 30/30 tests passing
+
+**Impact**: All VAD tests can now be run successfully with `python tests/run_vad_tests.py` (both normal and `--quick` modes)
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)

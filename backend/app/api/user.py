@@ -15,31 +15,37 @@ async def get_user_preferences(
     agent=Depends(get_agent),
     db=Depends(get_database)
 ):
-    """Get user preferences."""
+    """Get user preferences. Returns 404 if user doesn't exist."""
     try:
-        # Get preferences from agent wrapper
-        preferences = await agent.get_user_preferences(user_id)
-        
+        # Get preferences from database directly
+        preferences = await db.get_user_preferences(user_id)
+
+        # Return 404 if user doesn't exist
+        if preferences is None:
+            raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
         # Convert to UserPreferences model
         user_prefs = UserPreferences(
             preferred_topics=preferences.get("preferred_topics", []),
             watchlist_stocks=preferences.get("watchlist_stocks", []),
-            voice_settings=preferences.get("voice_settings", {
+            voice_settings={
                 "speech_rate": 1.0,
                 "voice_type": "default",
                 "interruption_sensitivity": 0.5,
                 "auto_play": True
-            }),
-            notification_settings=preferences.get("notification_settings", {
+            },
+            notification_settings={
                 "breaking_news": True,
                 "stock_alerts": True,
                 "daily_briefing": True,
                 "email_notifications": False
-            })
+            }
         )
-        
+
         return user_prefs
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting user preferences: {str(e)}")
 
@@ -81,13 +87,17 @@ async def update_user_preferences(
 @router.get("/topics")
 async def get_user_topics(
     user_id: str = Query(..., description="User ID"),
-    agent=Depends(get_agent)
+    db=Depends(get_database)
 ):
-    """Get user's preferred topics."""
+    """Get user's preferred topics. Returns 404 if user doesn't exist."""
     try:
-        # Get preferences from agent wrapper
-        preferences = await agent.get_user_preferences(user_id)
-        
+        # Get preferences from database
+        preferences = await db.get_user_preferences(user_id)
+
+        # Return 404 if user doesn't exist
+        if preferences is None:
+            raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
         return {
             "preferred_topics": preferences.get("preferred_topics", []),
             "available_topics": [
@@ -103,7 +113,9 @@ async def get_user_topics(
                 "general"
             ]
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting user topics: {str(e)}")
 
@@ -175,17 +187,23 @@ async def remove_user_topic(
 @router.get("/watchlist")
 async def get_user_watchlist(
     user_id: str = Query(..., description="User ID"),
-    agent=Depends(get_agent)
+    db=Depends(get_database)
 ):
-    """Get user's stock watchlist."""
+    """Get user's stock watchlist. Returns 404 if user doesn't exist."""
     try:
-        # Get preferences from agent wrapper
-        preferences = await agent.get_user_preferences(user_id)
-        
+        # Get preferences from database
+        preferences = await db.get_user_preferences(user_id)
+
+        # Return 404 if user doesn't exist
+        if preferences is None:
+            raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
         return {
             "watchlist_stocks": preferences.get("watchlist_stocks", [])
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting user watchlist: {str(e)}")
 

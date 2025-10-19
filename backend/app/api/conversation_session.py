@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from ..utils.conversation_logger import get_conversation_logger, SessionInfo, ConversationTurn
 
-router = APIRouter(prefix="/api/conversation-sessions", tags=["conversation-sessions"])
+router = APIRouter(prefix="/api/conversation-session", tags=["conversation-sessions"])
 
 
 class ConversationTurnResponse(BaseModel):

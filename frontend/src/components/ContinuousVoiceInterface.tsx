@@ -16,6 +16,8 @@ interface ContinuousVoiceInterfaceProps {
   onTranscription?: (text: string) => void;
   onResponse?: (text: string) => void;
   onError?: (error: string) => void;
+  onConnectionChange?: (connected: boolean) => void;
+  onVoiceStateChange?: (state: VoiceState) => void;
 }
 
 /**
@@ -31,7 +33,9 @@ export function ContinuousVoiceInterface({
   userId,
   onTranscription,
   onResponse,
-  onError
+  onError,
+  onConnectionChange,
+  onVoiceStateChange
 }: ContinuousVoiceInterfaceProps) {
   // Voice settings hook (with configurable VAD parameters)
   const { settings } = useVoiceSettings();
@@ -73,6 +77,15 @@ export function ContinuousVoiceInterface({
   const VAD_CHECK_INTERVAL_MS = settings.vad_check_interval_ms;
   const SPEECH_THRESHOLD = settings.vad_threshold;
   const MIN_RECORDING_DURATION_MS = settings.min_recording_duration_ms;
+
+  // Propagate state changes to parent
+  useEffect(() => {
+    onConnectionChange?.(isConnected);
+  }, [isConnected, onConnectionChange]);
+
+  useEffect(() => {
+    onVoiceStateChange?.(voiceState);
+  }, [voiceState, onVoiceStateChange]);
 
   /**
    * WebSocket connection management

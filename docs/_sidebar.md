@@ -14,7 +14,10 @@
   - Architecture
     - [System Design](docs/reference/SYSTEM_DESIGN_CURRENT.md)
     - [API Design](docs/reference/API_DESIGN.md)
+    - [Stock & News API](docs/reference/STOCK_NEWS_API_DESIGN.md)
     - [Database Setup](docs/reference/DATABASE_SETUP.md)
+  - Quick Start
+    - [Stock & News Quick Start](docs/reference/STOCK_NEWS_QUICK_START.md)
   - Guides
     - [Audio Pipeline](docs/reference/AUDIO_PIPELINE_FIXES.md)
     - [VAD & Compression](docs/reference/VAD_AND_COMPRESSION_GUIDE.md)

@@ -112,13 +112,22 @@ class DatabaseManager:
             print(f"❌ Error getting user preferences: {e}")
             return None
     
-    async def create_conversation_session(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Create new conversation session."""
+    async def create_conversation_session(self, user_id: str, session_id: str = None) -> Optional[Dict[str, Any]]:
+        """Create new conversation session with required session_id."""
+        import uuid
+        from datetime import datetime
+
         try:
+            if not session_id:
+                session_id = str(uuid.uuid4())
+
             session_data = {
+                'session_id': session_id,  # REQUIRED field
                 'user_id': user_id,
-                'session_start': 'now()',
-                'is_active': True
+                'session_start': datetime.utcnow().isoformat(),
+                'started_at': datetime.utcnow().isoformat(),
+                'is_active': True,
+                'metadata': {}
             }
             result = self.client.table('conversation_sessions').insert(session_data).execute()
             return result.data[0] if result.data else None
@@ -185,7 +194,7 @@ class DatabaseManager:
             print(f"❌ Error getting stock data for {symbol}: {e}")
             return None
     
-    async def track_user_interaction(self, user_id: str, interaction_type: str, 
+    async def track_user_interaction(self, user_id: str, interaction_type: str,
                                    target_content: str = None, success: bool = True,
                                    response_time_ms: int = None) -> bool:
         """Track user interaction for analytics."""
@@ -201,6 +210,62 @@ class DatabaseManager:
             return bool(result.data)
         except Exception as e:
             print(f"❌ Error tracking user interaction: {e}")
+            return False
+
+    async def get_voice_settings(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get voice settings for a user."""
+        try:
+            def _fetch():
+                return (
+                    self.client
+                    .table('voice_settings')
+                    .select('*')
+                    .eq('user_id', user_id)
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_fetch)
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]
+            return None
+        except Exception as e:
+            print(f"❌ Error getting voice settings: {e}")
+            return None
+
+    async def save_voice_settings(self, user_id: str, settings: Dict[str, Any]) -> bool:
+        """Save or update voice settings for a user."""
+        try:
+            def _upsert():
+                return (
+                    self.client
+                    .table('voice_settings')
+                    .upsert(settings, on_conflict='user_id')
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_upsert)
+            return bool(result.data)
+        except Exception as e:
+            print(f"❌ Error saving voice settings: {e}")
+            return False
+
+    async def delete_voice_settings(self, user_id: str) -> bool:
+        """Delete voice settings for a user (reset to defaults)."""
+        try:
+            def _delete():
+                return (
+                    self.client
+                    .table('voice_settings')
+                    .delete()
+                    .eq('user_id', user_id)
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_delete)
+            return True
+        except Exception as e:
+            print(f"❌ Error deleting voice settings: {e}")
             return False
 
 

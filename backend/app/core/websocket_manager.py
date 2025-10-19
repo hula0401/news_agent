@@ -12,6 +12,7 @@ from ..core.agent_wrapper import get_agent
 from ..database import get_database
 from ..cache import get_cache
 from .streaming_handler import get_streaming_handler
+from .conversation_tracker import get_conversation_tracker
 from ..utils.logger import get_logger
 from ..utils.conversation_logger import get_conversation_logger
 
@@ -36,6 +37,9 @@ class WebSocketManager:
 
         # Conversation logger for comprehensive logging
         self.conversation_logger = get_conversation_logger()
+
+        # Conversation tracker for database persistence
+        self.conversation_tracker = get_conversation_tracker()
 
         # Track TTS chunks per session
         self.tts_chunk_counts: Dict[str, int] = {}
@@ -156,18 +160,21 @@ class WebSocketManager:
             self.active_connections[session_id] = websocket
             self.user_sessions[user_id] = session_id
             self.session_data[session_id] = session_data
-            
-            # Create session in database (non-fatal if it fails)
-            try:
-                await self.db.create_conversation_session(user_id)
-            except Exception as db_err:
-                # Log and continue – don't break the WebSocket connection
-                self.logger.warning(session_id, f"Failed to create conversation session: {db_err}")
-            
+
+            # REMOVED: Old duplicate session creation that was missing session_id field
+            # The conversation_tracker.start_session() below handles database persistence correctly
+
             self.logger.websocket_connect(session_id, user_id)
 
-            # Start conversation logging session
+            # Start conversation logging session (file-based logging)
             self.conversation_logger.start_session(session_id, user_id)
+
+            # Start conversation tracking (database persistence with all required fields)
+            await self.conversation_tracker.start_session(
+                session_id=session_id,
+                user_id=user_id,
+                metadata={"client_ip": getattr(websocket.client, "host", "unknown")}
+            )
 
             # Small delay to ensure WebSocket is fully ready after accept
             await asyncio.sleep(0.01)
@@ -226,6 +233,9 @@ class WebSocketManager:
                 
                 # End conversation logging session
                 self.conversation_logger.end_session(session_id)
+
+                # End conversation tracking (updates session_end, is_active=False)
+                await self.conversation_tracker.end_session(session_id)
 
                 # Clean up session data
                 if session_id in self.session_data:
@@ -501,6 +511,27 @@ class WebSocketManager:
             if result["success"]:
                 transcription = result["transcription"]
                 agent_response = result["response"]
+
+                # Track user message (non-blocking, ~1ms)
+                await self.conversation_tracker.track_message(
+                    session_id=session_id,
+                    role="user",
+                    content=transcription,
+                    audio_url=None,
+                    metadata={"audio_format": audio_format, "audio_size_bytes": audio_size}
+                )
+
+                # Track agent message (non-blocking, ~1ms)
+                await self.conversation_tracker.track_message(
+                    session_id=session_id,
+                    role="agent",  # DB constraint requires "agent" not "assistant"
+                    content=agent_response,
+                    audio_url=result.get("audio_url"),
+                    metadata={"timestamp": result.get("timestamp")}
+                )
+
+                # Track discussed news (Option A: Session-based)
+                await self._track_news_from_response(session_id, transcription, agent_response)
 
                 # Send transcription
                 await self.send_message(session_id, {
@@ -975,6 +1006,70 @@ class WebSocketManager:
                     "session_id": session_id
                 }
             })
+
+    async def _track_news_from_response(self, session_id: str, user_input: str, agent_response: str):
+        """
+        Extract and track discussed news from agent response (Option A).
+
+        Looks for stock symbols and news mentions in the conversation.
+        """
+        import re
+
+        try:
+            # Common stock symbols (add more as needed)
+            stock_symbols = ["TSLA", "AAPL", "GOOGL", "MSFT", "AMZN", "NVDA", "META"]
+
+            # Extract stock symbol from user input or agent response
+            detected_symbol = None
+            for symbol in stock_symbols:
+                if symbol in user_input.upper() or symbol in agent_response.upper():
+                    detected_symbol = symbol
+                    break
+
+            # Also check for company names and map to symbols
+            company_to_symbol = {
+                "TESLA": "TSLA",
+                "APPLE": "AAPL",
+                "GOOGLE": "GOOGL",
+                "MICROSOFT": "MSFT",
+                "AMAZON": "AMZN",
+                "NVIDIA": "NVDA",
+                "META": "META",
+                "FACEBOOK": "META"
+            }
+
+            if not detected_symbol:
+                for company, symbol in company_to_symbol.items():
+                    if company in user_input.upper() or company in agent_response.upper():
+                        detected_symbol = symbol
+                        break
+
+            # If stock mentioned and response contains news indicators
+            if detected_symbol and any(keyword in agent_response.lower() for keyword in ["news", "article", "reports", "announced", "feedback"]):
+                # Extract news title (simple heuristic: look for **Title** or title in quotes)
+                news_title_match = re.search(r'\*\*(.*?)\*\*', agent_response)
+                if news_title_match:
+                    news_title = news_title_match.group(1)
+                else:
+                    # Fallback: use first sentence as title
+                    sentences = agent_response.split('.')
+                    news_title = sentences[0][:200] if sentences else "News discussed"
+
+                # Track the news
+                self.conversation_tracker.track_discussed_news(
+                    session_id=session_id,
+                    stock_symbol=detected_symbol,
+                    news_title=news_title,
+                    news_url=None,  # Not available in voice response
+                    news_source=None,  # Not available
+                    published_at=None  # Not available
+                )
+
+                print(f"📰 Tracked news: {detected_symbol} - {news_title[:50]}...")
+
+        except Exception as e:
+            print(f"⚠️ Error tracking news: {e}")
+            # Non-critical, don't fail the request
 
 
 # Global WebSocket manager instance

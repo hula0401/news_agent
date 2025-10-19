@@ -4,16 +4,16 @@ from logging.handlers import RotatingFileHandler
 import os
 import asyncio
 import time
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from .config import get_settings
 from .database import get_database
-from .cache import get_cache
+from .cache import get_cache  # Legacy cache manager from cache.py
 from .core.websocket_manager import get_websocket_manager
 from .api import voice, news, conversation, user
-from .api.profile import router as profile_router
 from .api.conversation_log import router as conversation_log_router
 from .api import websocket_simple
 from .api.conversation_session import router as conversation_session_router
@@ -80,7 +80,19 @@ async def lifespan(app: FastAPI):
                 logger.info("✅ WebSocket manager initialized")
             except Exception as e:
                 logger.warning(f"⚠️ WebSocket manager initialization failed: {e}")
-            
+
+            # Start background scheduler for stock & news updates
+            if settings.enable_scheduler:
+                try:
+                    from .scheduler import get_scheduler_manager
+                    scheduler = get_scheduler_manager()
+                    scheduler.start()
+                    logger.info("✅ Background scheduler started")
+                except Exception as e:
+                    logger.warning(f"⚠️ Scheduler initialization failed: {e}")
+            else:
+                logger.info("ℹ️ Background scheduler disabled via configuration")
+
             logger.info("🎉 Backend startup complete!")
             
         except Exception as e:
@@ -94,6 +106,26 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("🛑 Shutting down Voice News Agent Backend...")
+
+    # Stop conversation tracker (flush remaining messages)
+    try:
+        from .core.conversation_tracker import get_conversation_tracker
+        tracker = get_conversation_tracker()
+        await tracker.stop()
+        logger.info("✅ Conversation tracker stopped")
+    except Exception as e:
+        logger.warning(f"⚠️ Conversation tracker shutdown error: {e}")
+
+    # Stop scheduler
+    if settings.enable_scheduler:
+        try:
+            from .scheduler import get_scheduler_manager
+            scheduler = get_scheduler_manager()
+            scheduler.shutdown()
+            logger.info("✅ Background scheduler stopped")
+        except Exception as e:
+            logger.warning(f"⚠️ Scheduler shutdown error: {e}")
+
     logger.info("✅ Backend shutdown complete!")
 
 
@@ -141,11 +173,61 @@ app.include_router(voice.router)
 app.include_router(news.router)
 app.include_router(conversation.router)
 app.include_router(user.router)
-app.include_router(profile_router)
+# Removed redundant profile router - use /api/user/* instead
 app.include_router(conversation_log_router)
 app.include_router(websocket_simple.router)
 app.include_router(conversation_session_router)
 app.include_router(voice_settings.router)
+
+# Include Stock & News API v1 router
+from .api.v1 import api_v1_router
+app.include_router(api_v1_router, prefix="/api/v1", tags=["v1"])
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint with conversation tracker statistics.
+
+    Returns:
+        dict: Health status and tracker metrics
+    """
+    try:
+        from .core.conversation_tracker import get_conversation_tracker
+
+        tracker = get_conversation_tracker()
+        tracker_stats = tracker.get_stats()
+
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "services": {
+                "conversation_tracker": {
+                    "queue_depth": tracker_stats["queue_depth"],
+                    "queue_max_size": tracker_stats["queue_max_size"],
+                    "queue_utilization": round(
+                        tracker_stats["queue_depth"] / tracker_stats["queue_max_size"] * 100, 2
+                    ),
+                    "active_sessions": tracker_stats["active_sessions"],
+                    "total_sessions": tracker_stats["total_sessions"],
+                    "worker_running": tracker_stats["worker_running"]
+                },
+                "scheduler": {
+                    "enabled": settings.enable_scheduler,
+                    "stock_update_interval_minutes": settings.stock_update_interval_minutes if settings.enable_scheduler else None,
+                    "news_update_interval_minutes": settings.news_update_interval_minutes if settings.enable_scheduler else None
+                }
+            }
+        }
+
+        return health_data
+
+    except Exception as e:
+        return {
+            "status": "degraded",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
 
 
 @app.get("/")

@@ -70,6 +70,23 @@
 
 ---
 
+## 📊 API & Database Design
+
+9. **[STOCK_NEWS_API_DESIGN.md](STOCK_NEWS_API_DESIGN.md)** 💹 **STOCK & NEWS API**
+   - Stock prices API with LFU caching
+   - Stock news (LIFO stack - Latest on Top)
+   - Economic news (Fed, politics, indicators)
+   - Multi-source news aggregation
+   - Database schema and Redis caching strategy
+
+10. **[database/stock_news_schema.sql](../../../database/stock_news_schema.sql)** 🗄️ **DATABASE SCHEMA**
+   - Complete SQL schema for stock & news tables
+   - Indexes and constraints
+   - Helper functions and triggers
+   - Row-level security policies
+
+---
+
 ## 📖 Additional Documentation
 
 ### Frontend
@@ -91,12 +108,15 @@
 - **[tests/testing_utils/AUDIO_TESTING_GUIDE.md](tests/testing_utils/AUDIO_TESTING_GUIDE.md)** - Audio testing
 - **[tests/voice_samples/voice_samples.json](tests/voice_samples/voice_samples.json)** - Test audio samples
 - **[test_ws_connection.py](test_ws_connection.py)** - WebSocket test script
+- **[tests/backend/test_stock_news_api_v1.py](../../../tests/backend/test_stock_news_api_v1.py)** - Stock & News API integration tests
 
 ### Reference
 
-- **[reference/API_DESIGN.md](reference/API_DESIGN.md)** - REST API design
-- **[reference/CONTINUOUS_VOICE_GUIDE.md](reference/CONTINUOUS_VOICE_GUIDE.md)** - Voice interface guide
-- **[database/README.md](database/README.md)** - Database schema
+- **[API_DESIGN.md](API_DESIGN.md)** - REST API design (original)
+- **[STOCK_NEWS_API_DESIGN.md](STOCK_NEWS_API_DESIGN.md)** - Stock & News API design (v1.0)
+- **[CONTINUOUS_VOICE_GUIDE.md](CONTINUOUS_VOICE_GUIDE.md)** - Voice interface guide
+- **[DATABASE_SETUP.md](DATABASE_SETUP.md)** - Database schema (original)
+- **[database/stock_news_schema.sql](../../../database/stock_news_schema.sql)** - Stock & News schema SQL
 
 ---
 
@@ -138,7 +158,8 @@
 
 #### **Architecture**
 - [SYSTEM_DESIGN_CURRENT.md](SYSTEM_DESIGN_CURRENT.md) - System design
-- [reference/API_DESIGN.md](reference/API_DESIGN.md) - API design
+- [API_DESIGN.md](API_DESIGN.md) - API design (original)
+- [STOCK_NEWS_API_DESIGN.md](STOCK_NEWS_API_DESIGN.md) - Stock & News API design
 
 #### **Audio Pipeline**
 - [WAV_IMPLEMENTATION_COMPLETE.md](WAV_IMPLEMENTATION_COMPLETE.md) - Implementation
@@ -157,6 +178,11 @@
 - [LATENCY_OPTIMIZATION_GUIDE.md](LATENCY_OPTIMIZATION_GUIDE.md) - Optimization
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Metrics
 
+#### **API & Database**
+- [STOCK_NEWS_API_DESIGN.md](STOCK_NEWS_API_DESIGN.md) - Complete API specification
+- [DATABASE_SETUP.md](DATABASE_SETUP.md) - Database schema (original)
+- [../../../database/stock_news_schema.sql](../../../database/stock_news_schema.sql) - SQL schema
+
 ---
 
 ## 📊 Document Status
@@ -171,8 +197,10 @@
 | VAD_FIXES.md | ✅ Complete | 2025-10-13 | 300+ |
 | WEBM_CONVERSION_ISSUE.md | ✅ Complete | 2025-10-13 | 400+ |
 | AUDIO_PIPELINE_FIXES.md | ✅ Complete | 2025-10-13 | 200+ |
+| STOCK_NEWS_API_DESIGN.md | ✅ Complete | 2025-10-17 | 1000+ |
+| stock_news_schema.sql | ✅ Complete | 2025-10-17 | 600+ |
 
-**Total Documentation:** 4000+ lines
+**Total Documentation:** 6000+ lines
 
 ---
 

@@ -117,3 +117,77 @@ class NewsTrend(BaseModel):
     trend_score: float = Field(..., description="Trend score")
     period: str = Field(..., description="Time period")
     created_at: datetime = Field(..., description="Trend timestamp")
+
+
+# ==================== Economic News API Models ====================
+
+
+class EconomicNewsItem(BaseModel):
+    """Economic news item model."""
+    id: str = Field(..., description="News article ID")
+    title: str = Field(..., description="News title")
+    summary: Optional[str] = Field(None, description="News summary")
+    url: Optional[str] = Field(None, description="Article URL")
+    published_at: datetime = Field(..., description="Publication timestamp")
+    source: Dict[str, Any] = Field(..., description="News source information")
+    category: str = Field(..., description="News category (federal_reserve, politics, etc.)")
+    region: str = Field(default="us", description="Geographic region")
+    impact_level: Optional[str] = Field(None, description="Market impact level (low/medium/high)")
+    sentiment_score: Optional[float] = Field(None, description="Sentiment score (-1 to 1)")
+    topics: List[str] = Field(default=[], description="Article topics")
+    is_breaking: bool = Field(default=False, description="Breaking news flag")
+    related_symbols: List[str] = Field(default=[], description="Related stock symbols")
+    affected_sectors: List[str] = Field(default=[], description="Affected economic sectors")
+    key_points: List[str] = Field(default=[], description="Key information points")
+    market_impact: Optional[str] = Field(None, description="Market impact analysis")
+
+
+class EconomicNewsResponse(BaseModel):
+    """Economic news response model."""
+    news: List[EconomicNewsItem] = Field(..., description="News articles")
+    total_count: int = Field(..., description="Total number of articles")
+    categories: List[str] = Field(..., description="Categories included")
+    last_updated: datetime = Field(..., description="Last update timestamp")
+    cache_hit: bool = Field(default=False, description="Whether data came from cache")
+
+
+class FederalReserveNewsItem(BaseModel):
+    """Federal Reserve news item model."""
+    id: str = Field(..., description="Announcement ID")
+    type: str = Field(..., description="Type (fomc_statement, speech, minutes, report, press_release)")
+    title: str = Field(..., description="Announcement title")
+    summary: Optional[str] = Field(None, description="Summary")
+    url: Optional[str] = Field(None, description="Official URL")
+    published_at: datetime = Field(..., description="Publication timestamp")
+    key_points: List[str] = Field(default=[], description="Key points from announcement")
+    market_impact: Optional[str] = Field(None, description="Expected market impact (low/medium/high)")
+    related_indicators: List[str] = Field(default=[], description="Related economic indicators")
+
+
+class FederalReserveNewsResponse(BaseModel):
+    """Federal Reserve news response model."""
+    announcements: List[FederalReserveNewsItem] = Field(..., description="Fed announcements")
+    total_count: int = Field(..., description="Total number of announcements")
+    last_updated: datetime = Field(..., description="Last update timestamp")
+
+
+class PoliticsNewsItem(BaseModel):
+    """Political news item model."""
+    id: str = Field(..., description="News article ID")
+    title: str = Field(..., description="News title")
+    summary: Optional[str] = Field(None, description="News summary")
+    url: Optional[str] = Field(None, description="Article URL")
+    published_at: datetime = Field(..., description="Publication timestamp")
+    region: str = Field(..., description="Geographic region (us, eu, china, etc.)")
+    impact_level: Optional[str] = Field(None, description="Market impact level (low/medium/high)")
+    affected_sectors: List[str] = Field(default=[], description="Affected sectors")
+    related_symbols: List[str] = Field(default=[], description="Related stock symbols")
+    sentiment_score: Optional[float] = Field(None, description="Sentiment score (-1 to 1)")
+
+
+class PoliticsNewsResponse(BaseModel):
+    """Political news response model."""
+    news: List[PoliticsNewsItem] = Field(..., description="Political news articles")
+    total_count: int = Field(..., description="Total number of articles")
+    regions: List[str] = Field(..., description="Regions covered")
+    last_updated: datetime = Field(..., description="Last update timestamp")

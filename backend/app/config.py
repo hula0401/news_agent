@@ -55,6 +55,22 @@ class Settings(BaseSettings):
     zhipuai_api_key: str = Field(default="placeholder", env="ZHIPUAI_API_KEY")
     alphavantage_api_key: str = Field(default="placeholder", env="ALPHAVANTAGE_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+
+    # Stock & News API Services
+    finnhub_api_key: Optional[str] = Field(default=None, env="FINNHUB_API_KEY")
+    polygon_api_key: Optional[str] = Field(default=None, env="POLYGON_API_KEY")
+    newsapi_api_key: Optional[str] = Field(default=None, env="NEWSAPI_API_KEY")
+
+    # Popular Stocks Configuration (comma-separated list)
+    popular_stocks: str = Field(
+        default="AAPL,GOOGL,MSFT,AMZN,TSLA,META,NVDA,JPM,V,WMT",
+        env="POPULAR_STOCKS"
+    )
+
+    # Scheduler Configuration
+    stock_update_interval_minutes: int = Field(default=5, env="STOCK_UPDATE_INTERVAL_MINUTES")
+    news_update_interval_minutes: int = Field(default=5, env="NEWS_UPDATE_INTERVAL_MINUTES")
+    enable_scheduler: bool = Field(default=True, env="ENABLE_SCHEDULER")
     
     # Voice Services
     sensevoice_model_path: str = Field(default_factory=get_sensevoice_model_path, env="SENSEVOICE_MODEL_PATH")

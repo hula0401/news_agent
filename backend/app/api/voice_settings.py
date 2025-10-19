@@ -43,7 +43,7 @@ async def get_voice_settings(user_id: str):
             settings = VoiceSettings()
 
         # Cache for 1 hour
-        await cache.set(cache_key, settings.model_dump_json(), ex=3600)
+        await cache.set(cache_key, settings.model_dump_json(), ttl=3600)
 
         return settings
 
@@ -76,7 +76,7 @@ async def update_voice_settings(
 
         # Update cache
         cache_key = f"voice_settings:{user_id}"
-        await cache.set(cache_key, settings.model_dump_json(), ex=3600)
+        await cache.set(cache_key, settings.model_dump_json(), ttl=3600)
 
         return settings
 

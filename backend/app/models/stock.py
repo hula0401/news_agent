@@ -139,3 +139,81 @@ class StockSearchResult(BaseModel):
     current_price: Optional[float] = Field(None, description="Current price")
     change_percent: Optional[float] = Field(None, description="Change percentage")
     relevance_score: float = Field(..., description="Relevance score")
+
+
+# ==================== Stock & News API Models ====================
+
+
+class StockPriceResponse(BaseModel):
+    """Stock price response model for API v1."""
+    symbol: str = Field(..., description="Stock ticker symbol")
+    price: float = Field(..., description="Current stock price in USD")
+    change: Optional[float] = Field(None, description="Price change from previous close")
+    change_percent: Optional[float] = Field(None, description="Percentage change from previous close")
+    volume: Optional[int] = Field(None, description="Trading volume")
+    market_cap: Optional[int] = Field(None, description="Market capitalization in USD")
+    high_52_week: Optional[float] = Field(None, description="52-week high price")
+    low_52_week: Optional[float] = Field(None, description="52-week low price")
+    last_updated: datetime = Field(..., description="Timestamp of price data")
+    source: str = Field(default="cache", description="Data source (cache/api)")
+    cache_hit: bool = Field(default=False, description="Whether data came from cache")
+
+
+class StockPriceBatchRequest(BaseModel):
+    """Batch stock price request model."""
+    symbols: List[str] = Field(..., description="List of stock symbols", min_length=1, max_length=50)
+    refresh: bool = Field(default=False, description="Force cache refresh")
+
+
+class StockPriceBatchResponse(BaseModel):
+    """Batch stock price response model."""
+    prices: List[StockPriceResponse] = Field(..., description="Stock price data")
+    total_count: int = Field(..., description="Total number of stocks")
+    cache_hits: int = Field(..., description="Number of cache hits")
+    cache_misses: int = Field(..., description="Number of cache misses")
+    processing_time_ms: int = Field(..., description="Processing time in milliseconds")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Response timestamp")
+
+
+class StockNewsItem(BaseModel):
+    """Stock news item model."""
+    id: str = Field(..., description="News article ID")
+    title: str = Field(..., description="News title")
+    summary: Optional[str] = Field(None, description="News summary")
+    url: Optional[str] = Field(None, description="Article URL")
+    published_at: datetime = Field(..., description="Publication timestamp")
+    source: Dict[str, Any] = Field(..., description="News source information")
+    sentiment_score: Optional[float] = Field(None, description="Sentiment score (-1 to 1)")
+    topics: List[str] = Field(default=[], description="Article topics")
+    is_breaking: bool = Field(default=False, description="Breaking news flag")
+    position_in_stack: Optional[int] = Field(None, description="Position in the 5-item stack (1-5)")
+
+
+class StockNewsResponse(BaseModel):
+    """Stock news response model."""
+    symbol: str = Field(..., description="Stock ticker symbol")
+    news: List[StockNewsItem] = Field(..., description="News articles")
+    total_count: int = Field(..., description="Total number of articles")
+    last_updated: datetime = Field(..., description="Last update timestamp")
+    cache_hit: bool = Field(default=False, description="Whether data came from cache")
+
+
+class StockNewsCreateRequest(BaseModel):
+    """Request model for creating/pushing new stock news."""
+    title: str = Field(..., description="News title")
+    summary: Optional[str] = Field(None, description="News summary")
+    url: Optional[str] = Field(None, description="Article URL")
+    published_at: datetime = Field(..., description="Publication timestamp")
+    source_id: str = Field(..., description="News source ID")
+    sentiment_score: Optional[float] = Field(None, description="Sentiment score (-1 to 1)")
+    topics: List[str] = Field(default=[], description="Article topics")
+    is_breaking: bool = Field(default=False, description="Breaking news flag")
+
+
+class StockNewsCreateResponse(BaseModel):
+    """Response model for created stock news."""
+    id: str = Field(..., description="Created news article ID")
+    symbol: str = Field(..., description="Stock ticker symbol")
+    position_in_stack: int = Field(..., description="Position in stack (always 1 for new)")
+    archived_article_id: Optional[str] = Field(None, description="ID of archived article (if any)")
+    created_at: datetime = Field(..., description="Creation timestamp")

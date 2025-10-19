@@ -42,9 +42,7 @@ async def process_voice_command(
 
 @router.post("/text-command", response_model=VoiceCommandResponse)
 async def process_text_command(
-    command: str,
-    user_id: str,
-    session_id: str,
+    request: VoiceCommandRequest,
     agent=Depends(get_agent),
     db=Depends(get_database)
 ):
@@ -52,17 +50,17 @@ async def process_text_command(
     try:
         # Process the command through the agent
         result = await agent.process_text_command(
-            command=command,
-            user_id=user_id,
-            session_id=session_id
+            command=request.command,
+            user_id=request.user_id,
+            session_id=request.session_id
         )
-        
+
         return VoiceCommandResponse(
             response_text=result["response_text"],
             audio_url=result.get("audio_url"),
             response_type=result["response_type"],
             processing_time_ms=result["processing_time_ms"],
-            session_id=session_id,
+            session_id=request.session_id,
             news_items=result.get("news_items"),
             stock_data=result.get("stock_data"),
             timestamp=result["timestamp"]

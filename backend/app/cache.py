@@ -69,15 +69,29 @@ class CacheManager:
         try:
             if not self.client:
                 await self.initialize()
-            
+
             json_value = json.dumps(value)
-            url = f"{self.base_url}/set/{key}"
-            
+
+            # Upstash REST API format: GET /set/{key}/{value}[/EX/{seconds}]
+            # URL encode the value
+            import urllib.parse
+            encoded_value = urllib.parse.quote(json_value, safe='')
+
             if ttl:
-                url += f"/ex/{ttl}"
-            
-            response = await self.client.post(url, content=json_value)
-            return response.status_code == 200
+                url = f"{self.base_url}/set/{key}/{encoded_value}/EX/{ttl}"
+            else:
+                url = f"{self.base_url}/set/{key}/{encoded_value}"
+
+            response = await self.client.get(url)
+
+            if response.status_code != 200:
+                print(f"❌ Redis SET failed for {key}: status={response.status_code}, response={response.text}")
+                return False
+
+            # Check response - should be {"result": "OK"}
+            result = response.json()
+            return result.get("result") == "OK"
+
         except Exception as e:
             print(f"❌ Error setting cache key {key}: {e}")
             return False

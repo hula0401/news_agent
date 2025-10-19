@@ -5,7 +5,7 @@ from ..models.conversation import ConversationHistoryRequest, ConversationHistor
 from ..database import get_database
 from ..cache import get_cache
 
-router = APIRouter(prefix="/api/conversations", tags=["conversations"])
+router = APIRouter(prefix="/api/conversation", tags=["conversations"])
 
 
 @router.get("/sessions", response_model=List[ConversationSession])
