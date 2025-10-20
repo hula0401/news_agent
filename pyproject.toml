@@ -63,6 +63,12 @@ dependencies = [
     "python-dateutil==2.9.0.post0",
     "pytz==2025.2",
     "typing-extensions==4.15.0",
+    # Logging
+    "loguru>=0.7.0",
+    # Audio processing
+    "numpy>=1.24.0",
+    # Scheduling
+    "apscheduler>=3.10.0",
 ]
 
 [project.optional-dependencies]

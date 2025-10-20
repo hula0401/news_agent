@@ -78,6 +78,10 @@ class StockPriceService:
                     if isinstance(last_updated, str):
                         last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
 
+                    # Ensure timezone-aware
+                    if last_updated.tzinfo is None:
+                        last_updated = last_updated.replace(tzinfo=timezone.utc)
+
                     age_minutes = (datetime.now(timezone.utc) - last_updated).total_seconds() / 60
 
                     if age_minutes < 2:  # Fresh data
@@ -99,6 +103,10 @@ class StockPriceService:
                 last_updated = db_price.get("last_updated")
                 if isinstance(last_updated, str):
                     last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+
+                # Ensure timezone-aware
+                if last_updated.tzinfo is None:
+                    last_updated = last_updated.replace(tzinfo=timezone.utc)
 
                 age_minutes = (datetime.now(timezone.utc) - last_updated).total_seconds() / 60
 
@@ -156,6 +164,10 @@ class StockPriceService:
             last_updated = db_price.get("last_updated")
             if isinstance(last_updated, str):
                 last_updated = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+
+            # Ensure timezone-aware
+            if last_updated.tzinfo is None:
+                last_updated = last_updated.replace(tzinfo=timezone.utc)
 
             age_minutes = (datetime.now(timezone.utc) - last_updated).total_seconds() / 60
 
@@ -237,7 +249,7 @@ class StockPriceService:
                     "previous_close": finnhub_data.get("previous_close"),
                     "volume": None,  # Finnhub doesn't provide volume in quote
                     "data_source": "finnhub",
-                    "last_updated": datetime.now()
+                    "last_updated": datetime.now(timezone.utc)
                 }
         except Exception as e:
             print(f"❌ Finnhub fetch failed for {symbol}: {e}")
@@ -265,7 +277,7 @@ class StockPriceService:
                     "previous_close": prev_close,
                     "volume": polygon_prev.get("volume"),
                     "data_source": "polygon",
-                    "last_updated": datetime.now()
+                    "last_updated": datetime.now(timezone.utc)
                 }
         except Exception as e:
             print(f"❌ Polygon fetch failed for {symbol}: {e}")
@@ -281,7 +293,7 @@ class StockPriceService:
         Returns:
             True if market is open
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         # Check if weekend
         if now.weekday() >= 5:  # Saturday = 5, Sunday = 6

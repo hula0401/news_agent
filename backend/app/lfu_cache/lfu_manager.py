@@ -158,7 +158,9 @@ class LFUCacheManager:
         except Exception as e:
             # Gracefully handle missing cache_access_stats table or other errors
             # Don't fail the cache operation just because tracking failed
-            print(f"⚠️ Warning: Could not track cache access for {cache_key}: {str(e)}")
+            import traceback
+            print(f"⚠️ Warning: Could not track cache access for {cache_key}: {type(e).__name__}: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
 
     async def get_lfu_candidates_for_eviction(
         self,
