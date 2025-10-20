@@ -2,6 +2,75 @@
 
 ## Recent Updates
 
+### 2025-10-19 (Part 4) - User API Fixes & Voice Settings System
+**Summary**: Fixed user watchlist/topics POST endpoints to accept JSON body, and implemented comprehensive voice settings system with database schema and REST API.
+
+**Changes Made**:
+
+1. **Fixed User API POST Endpoints** ([backend/app/api/user/__init__.py](../../../backend/app/api/user/__init__.py)):
+   - **Problem**: `/api/user/watchlist/add` and `/api/user/topics/add` expected query parameters but clients sent JSON body
+   - **Error**: HTTP 422 "Field required in query"
+   - **Solution**:
+     - Added request models: `AddTopicRequest`, `AddWatchlistRequest` in [backend/app/models/user.py](../../../backend/app/models/user.py)
+     - Updated endpoints to accept JSON body using Pydantic models
+     - Restructured `user.py` as package for better organization
+
+   **Example**:
+   ```bash
+   # Now works with JSON body
+   POST /api/user/topics/add
+   {"user_id": "...", "topic": "technology"}
+   → {"message": "Topic 'technology' added successfully", "topics": ["technology"]}
+
+   POST /api/user/watchlist/add
+   {"user_id": "...", "symbol": "NVDA"}
+   → {"message": "Stock 'NVDA' added to watchlist", "watchlist": ["NVDA"]}
+   ```
+
+2. **New: User Voice Settings System**
+   - **Database Schema**: [database/user_voice_settings_schema.sql](../../../database/user_voice_settings_schema.sql)
+   - **Models**: [backend/app/models/voice_settings.py](../../../backend/app/models/voice_settings.py)
+   - **API Router**: [backend/app/api/user/settings/voice.py](../../../backend/app/api/user/settings/voice.py)
+
+   **Voice Settings Parameters**:
+   - `voice_type`: calm | casual | professional | energetic (default: professional)
+   - `speech_rate`: 0.50-2.00 (default: 1.00)
+   - `vad_sensitivity`: low | balanced | high (default: balanced)
+   - `vad_aggressiveness`: 0-3 WebRTC VAD level (default: 2)
+   - `interruption_enabled`: boolean (default: true)
+   - `interruption_threshold`: 0.00-1.00 energy level (default: 0.50)
+   - `use_audio_compression`: Enable Opus compression (default: false)
+   - `auto_play_responses`: boolean (default: true)
+
+   **New Endpoints**:
+   - `GET /api/user/settings/voice/presets` - Get predefined presets (5 configurations)
+   - `GET /api/user/settings/voice/{user_id}` - Get user's voice settings
+   - `POST /api/user/settings/voice/{user_id}` - Create/update voice settings (UPSERT)
+   - `DELETE /api/user/settings/voice/{user_id}` - Delete voice settings (reset to defaults)
+   - `PATCH /api/user/settings/voice/{user_id}/last-used` - Update last used timestamp
+
+   **Presets**: default, mobile_friendly, fast_reader, quiet_environment, noisy_environment
+
+**Files Modified**:
+- backend/app/api/user.py → backend/app/api/user/__init__.py (restructured as package)
+- backend/app/models/user.py - Added AddTopicRequest, AddWatchlistRequest
+- backend/app/main.py - Added voice settings router
+
+**Files Created**:
+- backend/app/api/user/settings/voice.py - Voice settings API (5 endpoints)
+- backend/app/models/voice_settings.py - Pydantic models (7 classes)
+- database/user_voice_settings_schema.sql - Complete schema with constraints, indexes, triggers
+
+**Testing**: See [tests/backend/api/test_user_voice_settings_api.py](../../../tests/backend/api/test_user_voice_settings_api.py)
+
+**Impact**:
+- ✅ User watchlist/topics API now REST compliant (JSON body)
+- ✅ Complete voice personalization system for users
+- ✅ 5 predefined presets for common use cases
+- ✅ Type-safe with full Pydantic validation
+
+---
+
 ### 2025-10-19 (Part 3) - P0 StockNewsService Initialization Bug Fix
 **Summary**: Fixed critical initialization order bug that broke all stock news endpoints with AttributeError.
 

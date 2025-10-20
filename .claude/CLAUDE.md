@@ -81,6 +81,45 @@ After completing ANY implementation, bug fix, or significant change:
    - If you fix a bug → Add entry to `docs/docs/references/SESSION_SUMMARY.md`
    - If you change configuration → Update `docs/docs/LOCAL_SETUP.md`
    - If you add features → Update `docs/README.md` and `docs/VERSION.md`
+   - **If you modify API endpoints** → Update `docs/docs/reference/API_DESIGN.md`
+
+5. **API Development Requirements**:
+   **CRITICAL: When adding or modifying API endpoints, you MUST**:
+
+   a. **Write Unit Tests FIRST** (or immediately after implementation):
+      - Create test file in `tests/backend/api/test_<module>_api.py`
+      - Test all success cases (200, 201, 204)
+      - Test all error cases (400, 404, 422, 500)
+      - Test validation boundaries (min/max values, enum options)
+      - Test request/response models match spec
+      - Aim for 100% endpoint coverage
+
+   b. **Update API Documentation**:
+      - Add new endpoints to `docs/docs/reference/API_DESIGN.md`
+      - Include in "Recent Updates" section at top with date
+      - Document request/response schemas
+      - Provide example requests and responses
+      - Note any breaking changes
+      - Link to test files
+
+   c. **Update Database Schema** (if database changes):
+      - Create/update SQL schema files in `database/`
+      - Include detailed column comments
+      - Add constraints, indexes, triggers
+      - Document default values and valid ranges
+
+   **Example Workflow**:
+   ```
+   1. Implement API endpoint
+   2. Write comprehensive unit tests
+   3. Run tests: `uv run python -m pytest tests/backend/api/test_<module>_api.py -v`
+   4. Update docs/docs/reference/API_DESIGN.md with "Recent Updates" entry
+   5. Update database/ schema if needed
+   6. Commit all changes together (code + tests + docs + schema)
+   ```
+
+   **This is NOT optional** - PRs without tests and documentation updates will be rejected.
+
 
 ### Tool Usage
 - Use `TodoWrite` tool to track multi-step tasks

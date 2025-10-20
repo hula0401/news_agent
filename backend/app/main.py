@@ -18,6 +18,7 @@ from .api.conversation_log import router as conversation_log_router
 from .api import websocket_simple
 from .api.conversation_session import router as conversation_session_router
 from .api import voice_settings
+from .api.user.settings.voice import router as user_voice_settings_router
 from .utils.logger import get_logger
 from .utils.conversation_logger import get_conversation_logger
 
@@ -178,6 +179,7 @@ app.include_router(conversation_log_router)
 app.include_router(websocket_simple.router)
 app.include_router(conversation_session_router)
 app.include_router(voice_settings.router)
+app.include_router(user_voice_settings_router)  # User voice settings at /api/user/settings/voice
 
 # Include Stock & News API v1 router
 from .api.v1 import api_v1_router

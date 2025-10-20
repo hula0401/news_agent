@@ -1,10 +1,16 @@
 """User API endpoints."""
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional, Dict, Any
-from ..models.user import UserPreferences, UserPreferencesUpdate, UserAnalytics
-from ..core.agent_wrapper import get_agent
-from ..database import get_database
-from ..cache import get_cache
+from ...models.user import (
+    UserPreferences,
+    UserPreferencesUpdate,
+    UserAnalytics,
+    AddTopicRequest,
+    AddWatchlistRequest
+)
+from ...core.agent_wrapper import get_agent
+from ...database import get_database
+from ...cache import get_cache
 
 router = APIRouter(prefix="/api/user", tags=["user"])
 
@@ -122,30 +128,29 @@ async def get_user_topics(
 
 @router.post("/topics/add")
 async def add_user_topic(
-    user_id: str,
-    topic: str,
+    request: AddTopicRequest,
     agent=Depends(get_agent)
 ):
     """Add topic to user's preferences."""
     try:
         # Get current preferences
-        preferences = await agent.get_user_preferences(user_id)
+        preferences = await agent.get_user_preferences(request.user_id)
         current_topics = preferences.get("preferred_topics", [])
-        
+
         # Add topic if not already present
-        if topic not in current_topics:
-            current_topics.append(topic)
-            
+        if request.topic not in current_topics:
+            current_topics.append(request.topic)
+
             # Update preferences
-            success = await agent.update_user_preferences(user_id, {
+            success = await agent.update_user_preferences(request.user_id, {
                 "preferred_topics": current_topics
             })
-            
+
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to add topic")
-        
-        return {"message": f"Topic '{topic}' added successfully"}
-        
+
+        return {"message": f"Topic '{request.topic}' added successfully", "topics": current_topics}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -210,31 +215,30 @@ async def get_user_watchlist(
 
 @router.post("/watchlist/add")
 async def add_watchlist_stock(
-    user_id: str,
-    symbol: str,
+    request: AddWatchlistRequest,
     agent=Depends(get_agent)
 ):
     """Add stock to user's watchlist."""
     try:
         # Get current preferences
-        preferences = await agent.get_user_preferences(user_id)
+        preferences = await agent.get_user_preferences(request.user_id)
         current_stocks = preferences.get("watchlist_stocks", [])
-        
+
         # Add stock if not already present
-        symbol_upper = symbol.upper()
+        symbol_upper = request.symbol.upper()
         if symbol_upper not in current_stocks:
             current_stocks.append(symbol_upper)
-            
+
             # Update preferences
-            success = await agent.update_user_preferences(user_id, {
+            success = await agent.update_user_preferences(request.user_id, {
                 "watchlist_stocks": current_stocks
             })
-            
+
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to add stock")
-        
-        return {"message": f"Stock '{symbol_upper}' added to watchlist"}
-        
+
+        return {"message": f"Stock '{symbol_upper}' added to watchlist", "watchlist": current_stocks}
+
     except HTTPException:
         raise
     except Exception as e:

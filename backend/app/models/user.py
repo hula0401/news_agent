@@ -100,3 +100,15 @@ class UserAnalytics(BaseModel):
     session_count: int = Field(default=0, description="Total sessions")
     total_session_time_minutes: float = Field(default=0.0, description="Total session time")
     last_active: Optional[datetime] = Field(None, description="Last activity timestamp")
+
+
+class AddTopicRequest(BaseModel):
+    """Request model for adding a topic."""
+    user_id: str = Field(..., description="User ID")
+    topic: str = Field(..., description="Topic to add")
+
+
+class AddWatchlistRequest(BaseModel):
+    """Request model for adding a stock to watchlist."""
+    user_id: str = Field(..., description="User ID")
+    symbol: str = Field(..., description="Stock symbol to add")
