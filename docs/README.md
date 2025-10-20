@@ -488,9 +488,6 @@ VITE_API_URL=http://localhost:8000
 
 # For remote Render backend testing
 VITE_API_URL=https://voice-news-agent-api.onrender.com
-
-# Demo user ID (optional, defaults to demo user)
-VITE_DEMO_USER_ID=03f6b167-0c4d-4983-a380-54b8eb42f830
 ```
 
 **Makefile Commands Handle Environment Variables:**

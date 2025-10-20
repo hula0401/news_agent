@@ -73,6 +73,7 @@ env/
 backend/.env
 env_files/*.env
 .env.*
+!frontend/.env.production  # Allow tracking production env template
 
 # IDEs
 .idea/

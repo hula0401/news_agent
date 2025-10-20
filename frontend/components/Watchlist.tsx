@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useAuth } from '../src/lib/auth-context'
 
 export default function Watchlist() {
-  const userId = process.env.NEXT_PUBLIC_DEMO_USER_ID || '03f6b167-0c4d-4983-a380-54b8eb42f830'
+  const { user } = useAuth()
   const apiBase = process.env.NEXT_PUBLIC_API_URL
 
   const [loading, setLoading] = useState(true)
@@ -12,8 +13,14 @@ export default function Watchlist() {
 
   useEffect(() => {
     const load = async () => {
+      if (!user?.id) {
+        setWatchlist([])
+        setLoading(false)
+        return
+      }
+
       try {
-        const res = await fetch(`${apiBase}/api/user/watchlist?user_id=${encodeURIComponent(userId)}`)
+        const res = await fetch(`${apiBase}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`)
         if (!res.ok) throw new Error('Failed to fetch watchlist')
         const data = await res.json()
         setWatchlist(data.watchlist_stocks || [])
@@ -24,7 +31,7 @@ export default function Watchlist() {
       }
     }
     load()
-  }, [apiBase, userId])
+  }, [apiBase, user?.id])
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">

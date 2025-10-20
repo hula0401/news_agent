@@ -50,7 +50,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: '["http://localhost:3000"]'
+        value: '*'  # Allow all origins in production - frontend handles auth
       - key: MAX_WEBSOCKET_CONNECTIONS
         value: 50
       - key: WEBSOCKET_HEARTBEAT_INTERVAL

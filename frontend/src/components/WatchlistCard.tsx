@@ -7,12 +7,14 @@ import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import { useWatchlistPrices } from "../hooks/stocks/useWatchlistPrices";
 import { getStockName } from "../mocks/stock-data";
+import { useAuth } from "../lib/auth-context";
 
 export function WatchlistCard() {
   const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)
     || (import.meta.env.NEXT_PUBLIC_API_URL as string | undefined)
     || 'http://localhost:8000';
-  const DEMO_USER_ID = (import.meta.env.VITE_DEMO_USER_ID as string | undefined) || '03f6b167-0c4d-4983-a380-54b8eb42f830';
+
+  const { user } = useAuth();
 
   const [symbols, setSymbols] = useState<string[]>([]);
   const [symbolsLoading, setSymbolsLoading] = useState(true);
@@ -21,11 +23,15 @@ export function WatchlistCard() {
   // Fetch watchlist symbols from /api/user/preferences endpoint
   useEffect(() => {
     const load = async () => {
-      // Fetch from /api/user/preferences endpoint (per API_DESIGN.md)
-      // IMPORTANT: Don't use profile context - fetch directly from API
-      const userId = DEMO_USER_ID || "demo-user-id";
+      // Only fetch if user is logged in
+      if (!user?.id) {
+        setSymbols([]);
+        setSymbolsLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(userId)}`);
+        const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`);
         if (!res.ok) {
           // If 404, user doesn't exist - don't show default symbols
           if (res.status === 404) {
@@ -49,7 +55,7 @@ export function WatchlistCard() {
     };
 
     load();
-  }, [API_BASE, DEMO_USER_ID]);
+  }, [API_BASE, user?.id]);
 
   // Fetch prices for watchlist symbols
   const { prices, loading: pricesLoading, error: pricesError, refetch, isMarketOpen } = useWatchlistPrices(symbols);

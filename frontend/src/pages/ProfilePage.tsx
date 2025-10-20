@@ -10,8 +10,8 @@ import { InterestCard } from "../components/InterestCard";
 import { StockWatchlistItem } from "../components/StockWatchlistItem";
 import { ArrowLeft, Plus, TrendingUp, Newspaper, DollarSign, Briefcase, Globe, Heart, Cpu, Zap, Music, Book } from "lucide-react";
 import { useProfile } from "../lib/profile-context";
+import { useAuth } from "../lib/auth-context";
 const API_BASE = import.meta.env.VITE_API_URL as string | undefined;
-const DEMO_USER_ID = (import.meta.env.VITE_DEMO_USER_ID as string | undefined) || '03f6b167-0c4d-4983-a380-54b8eb42f830';
 import { toast } from "sonner@2.0.3";
 
 interface ProfilePageProps {
@@ -20,6 +20,7 @@ interface ProfilePageProps {
 
 export function ProfilePage({ onBack }: ProfilePageProps) {
   const { profile, updateProfile, isLoading } = useProfile();
+  const { user } = useAuth();
   const [newStock, setNewStock] = useState("");
   const [localInterests, setLocalInterests] = useState(profile?.interests || {});
   const [localWatchlist, setLocalWatchlist] = useState(profile?.watchlist || []);
@@ -62,10 +63,9 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
     const topics = Object.entries(updatedInterests)
       .filter(([, v]) => Boolean(v))
       .map(([k]) => k);
-    if (!API_BASE) return;
+    if (!API_BASE || !user?.id) return;
     try {
-      const userId = DEMO_USER_ID || 'demo-user-id';
-      const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(userId)}`, {
+      const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferred_topics: topics })

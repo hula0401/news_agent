@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useAuth } from '../src/lib/auth-context'
 
 type Props = { onClose: () => void }
 
@@ -19,7 +20,7 @@ const AVAILABLE_TOPICS = [
 ]
 
 export default function UserProfileModal({ onClose }: Props) {
-  const userId = process.env.NEXT_PUBLIC_DEMO_USER_ID || '03f6b167-0c4d-4983-a380-54b8eb42f830'
+  const { user } = useAuth()
   const apiBase = process.env.NEXT_PUBLIC_API_URL
 
   const [loading, setLoading] = useState(true)
@@ -28,8 +29,13 @@ export default function UserProfileModal({ onClose }: Props) {
 
   useEffect(() => {
     const load = async () => {
+      if (!user?.id) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const res = await fetch(`${apiBase}/api/user/preferences?user_id=${encodeURIComponent(userId)}`)
+        const res = await fetch(`${apiBase}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`)
         if (!res.ok) throw new Error('Failed to fetch preferences')
         const data = await res.json()
         setPreferredTopics(data.preferred_topics || [])
@@ -40,7 +46,7 @@ export default function UserProfileModal({ onClose }: Props) {
       }
     }
     load()
-  }, [apiBase, userId])
+  }, [apiBase, user?.id])
 
   const toggleTopic = (topic: string) => {
     setPreferredTopics((prev) =>
@@ -49,9 +55,14 @@ export default function UserProfileModal({ onClose }: Props) {
   }
 
   const handleSave = async () => {
+    if (!user?.id) {
+      toast.error('Please log in to save preferences')
+      return
+    }
+
     setSaving(true)
     try {
-      const res = await fetch(`${apiBase}/api/user/preferences?user_id=${encodeURIComponent(userId)}`, {
+      const res = await fetch(`${apiBase}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferred_topics: preferredTopics })

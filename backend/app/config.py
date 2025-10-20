@@ -155,11 +155,21 @@ class Settings(BaseSettings):
     vad_aggressiveness: int = Field(default=3, ge=0, le=3, env="VAD_AGGRESSIVENESS")
     
     # CORS Configuration
-    cors_origins: List[str] = Field(
-        default=["http://localhost:3000"], 
+    cors_origins: str = Field(
+        default="http://localhost:3000",
         env="CORS_ORIGINS"
     )
     cors_credentials: bool = Field(default=True, env="CORS_CREDENTIALS")
+
+    def get_cors_origins(self) -> List[str]:
+        """Parse CORS origins from string (supports '*' for all origins)."""
+        if self.cors_origins == '*':
+            return ['*']
+        # Support comma-separated list or JSON array format
+        if self.cors_origins.startswith('['):
+            import json
+            return json.loads(self.cors_origins)
+        return [origin.strip() for origin in self.cors_origins.split(',')]
     
     # Security
     secret_key: str = Field(default="dev-secret-key-change-in-production", env="SECRET_KEY")
