@@ -1,62 +1,38 @@
 /**
  * Stock Price Service
  * Handles fetching stock prices from backend API
- * Falls back to mock data when backend is unavailable
+ * NO MOCK DATA - All prices must come from real backend
  */
 
 import { api } from '../utils/api-client';
-import { generateStockPrice, generateBatchPrices, type StockPrice, type BatchPriceResponse } from '../mocks/stock-data';
+import type { StockPrice, BatchPriceResponse } from '../mocks/stock-data';
 import { logger } from '../utils/logger';
-
-const USE_MOCK_DATA = false; // Use real backend API
 
 export class StockPriceService {
   /**
    * Get price for a single stock
+   * Throws error if backend is unavailable - no mock fallback
    */
   async getPrice(symbol: string, refresh: boolean = false): Promise<StockPrice> {
-    if (USE_MOCK_DATA) {
-      logger.info('stock-service', `Getting mock price for ${symbol}`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
-      return generateStockPrice(symbol);
-    }
+    logger.info('stock-service', `Fetching price for ${symbol} from API`);
+    const params: Record<string, string> = {};
+    if (refresh) params.refresh = 'true';
 
-    try {
-      logger.info('stock-service', `Fetching price for ${symbol} from API`);
-      const params: Record<string, string> = {};
-      if (refresh) params.refresh = 'true';
-
-      const response = await api.get<StockPrice>(`/api/v1/stocks/${symbol}/price`, params);
-      return response;
-    } catch (error) {
-      logger.error('stock-service', `Failed to fetch price for ${symbol}, using mock data`, error);
-      return generateStockPrice(symbol);
-    }
+    const response = await api.get<StockPrice>(`/api/v1/stocks/${symbol}/price`, params);
+    return response;
   }
 
   /**
    * Get prices for multiple stocks in a batch request
+   * Throws error if backend is unavailable - no mock fallback
    */
   async getBatchPrices(symbols: string[], refresh: boolean = false): Promise<BatchPriceResponse> {
-    if (USE_MOCK_DATA) {
-      logger.info('stock-service', `Getting mock batch prices for ${symbols.length} symbols`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 200));
-      return generateBatchPrices(symbols);
-    }
-
-    try {
-      logger.info('stock-service', `Fetching batch prices for ${symbols.length} symbols from API`);
-      const response = await api.post<BatchPriceResponse>('/api/v1/stocks/prices/batch', {
-        symbols,
-        refresh,
-      });
-      return response;
-    } catch (error) {
-      logger.error('stock-service', `Failed to fetch batch prices, using mock data`, error);
-      return generateBatchPrices(symbols);
-    }
+    logger.info('stock-service', `Fetching batch prices for ${symbols.length} symbols from API`);
+    const response = await api.post<BatchPriceResponse>('/api/v1/stocks/prices/batch', {
+      symbols,
+      refresh,
+    });
+    return response;
   }
 
   /**

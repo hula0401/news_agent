@@ -364,9 +364,12 @@ class WebSocketManager:
                     "streaming": True  # Indicate streaming TTS will follow
                 }
             })
-            
-            # Stream TTS audio chunks
-            await self.stream_tts_response(session_id, response_text)
+
+            # Stream TTS audio chunks only if response has content
+            if response_text and response_text.strip():
+                await self.stream_tts_response(session_id, response_text)
+            else:
+                print(f"⚠️ Skipping TTS for empty response")
             
         except Exception as e:
             print(f"❌ Error handling voice command: {e}")

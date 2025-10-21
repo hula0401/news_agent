@@ -7,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Slider } from "../components/ui/slider";
 import { Switch } from "../components/ui/switch";
 import { InterestCard } from "../components/InterestCard";
-import { StockWatchlistItem } from "../components/StockWatchlistItem";
-import { ArrowLeft, Plus, TrendingUp, Newspaper, DollarSign, Briefcase, Globe, Heart, Cpu, Zap, Music, Book } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Newspaper, DollarSign, Briefcase, Globe, Heart, Cpu, Zap, Music, Book, X } from "lucide-react";
 import { useProfile } from "../lib/profile-context";
 import { useAuth } from "../lib/auth-context";
+import { useWatchlistPrices } from "../hooks/stocks/useWatchlistPrices";
+import { getStockName } from "../mocks/stock-data";
+import { Skeleton } from "../components/ui/skeleton";
 const API_BASE = import.meta.env.VITE_API_URL as string | undefined;
 import { toast } from "sonner@2.0.3";
 
@@ -23,7 +25,7 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
   const { user } = useAuth();
   const [newStock, setNewStock] = useState("");
   const [localInterests, setLocalInterests] = useState(profile?.interests || {});
-  const [localWatchlist, setLocalWatchlist] = useState(profile?.watchlist || []);
+  const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
   const [localSpeechRate, setLocalSpeechRate] = useState([profile?.settings.speechRate || 1.0]);
   const [localInterruptionSensitivity, setLocalInterruptionSensitivity] = useState([profile?.settings.interruptionSensitivity || 50]);
   const [localNotifications, setLocalNotifications] = useState(profile?.notifications || {
@@ -33,15 +35,42 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
     dailyBrief: false,
   });
 
+  // Fetch watchlist symbols from API
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      if (!user?.id || !API_BASE) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setWatchlistSymbols([]);
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setWatchlistSymbols(data.watchlist_stocks || []);
+      } catch (error) {
+        console.error('Failed to load watchlist:', error);
+        setWatchlistSymbols([]);
+      }
+    };
+
+    loadWatchlist();
+  }, [user?.id, API_BASE]);
+
   useEffect(() => {
     if (profile) {
       setLocalInterests(profile.interests);
-      setLocalWatchlist(profile.watchlist);
       setLocalSpeechRate([profile.settings.speechRate]);
       setLocalInterruptionSensitivity([profile.settings.interruptionSensitivity]);
       setLocalNotifications(profile.notifications);
     }
   }, [profile]);
+
+  // Fetch prices for watchlist symbols
+  const { prices, loading: pricesLoading, error: pricesError, isMarketOpen } = useWatchlistPrices(watchlistSymbols);
 
   const interestCategories = [
     { id: "technology", icon: Cpu, title: "Technology", description: "Tech news, AI, gadgets" },
@@ -78,34 +107,59 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
   };
 
   const addStock = async () => {
-    if (newStock.trim()) {
-      const newStockItem = {
-        symbol: newStock.toUpperCase(),
-        name: `${newStock.toUpperCase()} Company`,
-        price: Math.random() * 500,
-        change: (Math.random() - 0.5) * 10,
-        changePercent: (Math.random() - 0.5) * 5,
-      };
-      const updatedWatchlist = [...localWatchlist, newStockItem];
-      setLocalWatchlist(updatedWatchlist);
-      setNewStock("");
-      try {
-        await updateProfile({ watchlist: updatedWatchlist });
-        toast.success("Stock added to watchlist");
-      } catch (error) {
-        toast.error("Failed to add stock");
-      }
+    if (!newStock.trim()) return;
+
+    const symbol = newStock.toUpperCase();
+
+    // Check if symbol already exists
+    if (watchlistSymbols.includes(symbol)) {
+      toast.error("Stock already in watchlist");
+      return;
+    }
+
+    const updatedSymbols = [...watchlistSymbols, symbol];
+    setWatchlistSymbols(updatedSymbols);
+    setNewStock("");
+
+    // Save to backend
+    if (!API_BASE || !user?.id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watchlist_stocks: updatedSymbols })
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
+      toast.success("Stock added to watchlist");
+    } catch (error) {
+      toast.error("Failed to add stock");
+      // Revert on error
+      setWatchlistSymbols(watchlistSymbols);
     }
   };
 
   const removeStock = async (symbol: string) => {
-    const updatedWatchlist = localWatchlist.filter(s => s.symbol !== symbol);
-    setLocalWatchlist(updatedWatchlist);
+    const updatedSymbols = watchlistSymbols.filter(s => s !== symbol);
+    setWatchlistSymbols(updatedSymbols);
+
+    // Save to backend
+    if (!API_BASE || !user?.id) return;
+
     try {
-      await updateProfile({ watchlist: updatedWatchlist });
+      const res = await fetch(`${API_BASE}/api/user/preferences?user_id=${encodeURIComponent(user.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watchlist_stocks: updatedSymbols })
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
       toast.success("Stock removed from watchlist");
     } catch (error) {
       toast.error("Failed to remove stock");
+      // Revert on error
+      setWatchlistSymbols(watchlistSymbols);
     }
   };
 
@@ -191,11 +245,18 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
           {/* Watchlist Tab */}
           <TabsContent value="watchlist" className="space-y-6">
             <Card className="p-6">
-              <h3 className="mb-2">Stock Watchlist</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3>Stock Watchlist</h3>
+                {isMarketOpen && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                    Market Open
+                  </span>
+                )}
+              </div>
               <p className="text-muted-foreground mb-6">
                 Add stocks you want to track in your voice briefings
               </p>
-              
+
               <div className="flex gap-2 mb-6">
                 <Input
                   placeholder="Enter stock symbol (e.g., AAPL)"
@@ -210,13 +271,99 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
               </div>
 
               <div className="space-y-3">
-                {localWatchlist.map((stock) => (
-                  <StockWatchlistItem
-                    key={stock.symbol}
-                    {...stock}
-                    onRemove={() => removeStock(stock.symbol)}
-                  />
-                ))}
+                {pricesLoading && watchlistSymbols.length === 0 ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-20 w-full" />
+                    ))}
+                  </div>
+                ) : watchlistSymbols.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-8">
+                    No stocks in watchlist yet. Add one above!
+                  </div>
+                ) : pricesError ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-red-500 mb-2">
+                      Unable to load stock prices
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Please check that the backend is running
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      {watchlistSymbols.map((symbol) => (
+                        <Card key={symbol} className="p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm">{symbol}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeStock(symbol)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : prices.length > 0 ? (
+                  prices.map((stock) => {
+                    const isPositive = stock.change >= 0;
+                    return (
+                      <Card key={stock.symbol} className="p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono font-bold">{stock.symbol}</span>
+                              {isPositive ? (
+                                <TrendingUp className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4 text-red-500" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{getStockName(stock.symbol)}</p>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="font-bold mb-1">${stock.price.toFixed(2)}</div>
+                            <div className={`text-sm ${isPositive ? "text-green-500" : "text-red-500"}`}>
+                              {isPositive ? "+" : ""}{stock.change.toFixed(2)} ({isPositive ? "+" : ""}{stock.change_percent.toFixed(2)}%)
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeStock(stock.symbol)}
+                            className="shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  watchlistSymbols.map((symbol) => (
+                    <Card key={symbol} className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <span className="font-mono font-bold">{symbol}</span>
+                          <p className="text-sm text-muted-foreground">{getStockName(symbol)}</p>
+                        </div>
+                        <Skeleton className="h-12 w-32" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeStock(symbol)}
+                          className="shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </Card>
           </TabsContent>

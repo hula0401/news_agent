@@ -190,6 +190,11 @@ class StockPriceService:
         """
         Get prices for multiple symbols (batch operation).
 
+        For any missing symbols (not in cache/DB), this method:
+        1. Immediately fetches them from external APIs
+        2. Adds them to the scheduler's tracked symbols
+        3. Returns the freshly fetched data
+
         Args:
             symbols: List of stock ticker symbols
             refresh: Force cache refresh
@@ -198,13 +203,46 @@ class StockPriceService:
             Dictionary mapping symbol to price data
         """
         results = {}
+        missing_symbols = []
 
         # Fetch prices concurrently (simplified - could use asyncio.gather)
         for symbol in symbols:
             price_data = await self.get_stock_price(symbol, refresh)
             results[symbol.upper()] = price_data
 
+            # Track symbols that were not in cache/DB (source="api")
+            # These are new symbols that should be added to scheduler
+            if price_data and price_data.get("source") == "api":
+                missing_symbols.append(symbol.upper())
+
+        # Add missing symbols to scheduler for future updates
+        if missing_symbols:
+            await self._add_symbols_to_scheduler(missing_symbols)
+
         return results
+
+    async def _add_symbols_to_scheduler(self, symbols: List[str]):
+        """
+        Add new symbols to the scheduler's tracked list.
+
+        This ensures that newly requested stocks will be automatically
+        updated by the background scheduler going forward.
+
+        Args:
+            symbols: List of stock symbols to add to scheduler
+        """
+        try:
+            from ..scheduler.scheduler_manager import get_scheduler_manager
+            scheduler = get_scheduler_manager()
+
+            # Add to tracked symbols
+            new_symbols = set(symbols) - scheduler._tracked_symbols
+            if new_symbols:
+                scheduler._tracked_symbols.update(new_symbols)
+                print(f"✅ Added {len(new_symbols)} new symbols to scheduler: {', '.join(sorted(new_symbols))}")
+
+        except Exception as e:
+            print(f"⚠️ Warning: Could not add symbols to scheduler: {e}")
 
     async def _fetch_from_external_apis(self, symbol: str) -> Optional[Dict[str, Any]]:
         """

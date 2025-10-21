@@ -56,6 +56,7 @@ export function useWatchlistPrices(symbols: string[]): UseWatchlistPricesResult 
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch prices');
       setError(error);
+      setPrices([]); // Clear any previous prices on error
       logger.error('useWatchlistPrices', 'Error fetching prices', error);
     } finally {
       setLoading(false);

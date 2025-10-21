@@ -37,13 +37,16 @@ class StreamingVoiceHandler:
         self.sensevoice_model = None
         self._model_loaded = False
         self.hf_space_asr = None
-        self._hf_space_enabled = True  # Prefer HF Space by default
         self.audio_validator = None
 
         # Get configuration
         from ..config import get_settings
         self.settings = get_settings()
         self._use_local_asr = self.settings.use_local_asr
+
+        # If USE_LOCAL_ASR=true, disable HF Space and use local model as primary
+        # If USE_LOCAL_ASR=false, use HF Space as primary (production mode on Render)
+        self._hf_space_enabled = not self._use_local_asr
 
         # Initialize audio validator with config settings
         if AUDIO_VALIDATOR_AVAILABLE:
@@ -97,11 +100,18 @@ class StreamingVoiceHandler:
             print("⚠️ edge-tts not available, skipping TTS streaming")
             return
 
+        # Validate text input
+        if not text or not text.strip():
+            print("⚠️ Empty text provided to TTS, skipping")
+            return
+
         try:
             # Create communicate object with SSL context handling
+            print(f"🔊 Starting TTS for text (length: {len(text)}): {text[:50]}...")
             communicate = edge_tts.Communicate(text, voice, rate=rate)
 
             buffer = bytearray()
+            chunk_count = 0
             async for chunk in communicate.stream():
                 if chunk["type"] == "audio":
                     buffer.extend(chunk["data"])
@@ -109,17 +119,32 @@ class StreamingVoiceHandler:
                     # Yield chunks of specified size
                     while len(buffer) >= chunk_size:
                         yield bytes(buffer[:chunk_size])
+                        chunk_count += 1
                         buffer = buffer[chunk_size:]
 
             # Yield remaining data
             if buffer:
                 yield bytes(buffer)
+                chunk_count += 1
+
+            print(f"✅ TTS completed: {chunk_count} chunks generated")
 
         except Exception as e:
             error_msg = str(e)
 
+            # Check for specific edge-tts errors
+            if "No audio was received" in error_msg:
+                print(f"⚠️ Edge-TTS error: No audio received")
+                print(f"   Text: {text[:100]}")
+                print(f"   Voice: {voice}")
+                print(f"   Rate: {rate}")
+                print(f"   Possible causes:")
+                print(f"   1. Network connectivity issues (check firewall/proxy)")
+                print(f"   2. Microsoft Edge TTS service temporarily unavailable")
+                print(f"   3. Invalid voice name (use edge-tts --list-voices to verify)")
+                print(f"   4. Text contains unsupported characters")
             # Check if it's an SSL certificate error
-            if "SSL" in error_msg or "certificate" in error_msg.lower():
+            elif "SSL" in error_msg or "certificate" in error_msg.lower():
                 print(f"⚠️ TTS SSL certificate error: {error_msg}")
                 print(f"   This is a known issue with edge-tts and api.msedgeservices.com")
                 print(f"   Possible solutions:")
@@ -175,7 +200,9 @@ class StreamingVoiceHandler:
         """
         Transcribe audio chunk with support for compressed formats.
 
-        Uses HuggingFace Space as primary ASR, falls back to local model.
+        ASR selection based on USE_LOCAL_ASR setting:
+        - USE_LOCAL_ASR=true: Use local SenseVoice model (for development)
+        - USE_LOCAL_ASR=false: Use HuggingFace Space (for production/Render)
 
         Args:
             audio_data: Raw audio bytes (may be compressed)

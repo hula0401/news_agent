@@ -16,6 +16,7 @@ class SchedulerManager:
         """Initialize scheduler manager."""
         self.scheduler: Optional[AsyncIOScheduler] = None
         self._running = False
+        self._tracked_symbols = set()  # Track all symbols being updated
 
     def start(self):
         """Start the scheduler with all jobs."""
@@ -71,18 +72,53 @@ class SchedulerManager:
         self._running = False
         logger.info("✅ Background scheduler stopped")
 
-    async def _update_popular_stocks(self):
+    async def _get_all_watchlist_symbols(self) -> set:
         """
-        Update popular stock prices from yfinance.
+        Get all unique symbols from user watchlists.
 
-        This job runs every N minutes to:
-        1. Fetch latest prices from Yahoo Finance
-        2. Calculate daily price changes based on yesterday's close
-        3. Update database
-        4. Update Redis cache with 2-minute TTL
+        Returns:
+            Set of all unique stock symbols across all users' watchlists
         """
         try:
-            logger.info("🔄 Starting popular stocks update job...")
+            from ..database import db_manager
+
+            # Query all user preferences and extract watchlist_stocks
+            query = """
+                SELECT DISTINCT jsonb_array_elements_text(preferences->'watchlist_stocks') as symbol
+                FROM user_preferences
+                WHERE preferences->'watchlist_stocks' IS NOT NULL
+                AND jsonb_array_length(preferences->'watchlist_stocks') > 0
+            """
+
+            result = db_manager.client.rpc('exec_sql', {
+                'query': query,
+                'params': []
+            }).execute()
+
+            if result.data:
+                symbols = {row['symbol'] for row in result.data if row.get('symbol')}
+                logger.debug(f"📋 Found {len(symbols)} unique watchlist symbols: {', '.join(sorted(symbols))}")
+                return symbols
+
+            return set()
+
+        except Exception as e:
+            logger.warning(f"⚠️ Could not fetch watchlist symbols: {e}")
+            return set()
+
+    async def _update_popular_stocks(self):
+        """
+        Update stock prices for popular stocks + all user watchlists.
+
+        This job runs every N minutes to:
+        1. Fetch symbols from popular_stocks config + all user watchlists
+        2. Fetch latest prices from Yahoo Finance
+        3. Calculate daily price changes based on yesterday's close
+        4. Update database
+        5. Update Redis cache with 2-minute TTL
+        """
+        try:
+            logger.info("🔄 Starting stock price update job...")
 
             # Import here to avoid circular dependencies
             from ..external.yfinance_client import get_yfinance_client
@@ -90,13 +126,28 @@ class SchedulerManager:
             from ..cache import cache_manager
             from ..database import db_manager
 
-            # Get popular stocks list
-            symbols = [s.strip() for s in settings.popular_stocks.split(',') if s.strip()]
+            # Get popular stocks from config
+            popular_symbols = {s.strip() for s in settings.popular_stocks.split(',') if s.strip()}
+
+            # Get all watchlist symbols from users
+            watchlist_symbols = await self._get_all_watchlist_symbols()
+
+            # Combine both sets
+            symbols = sorted(popular_symbols | watchlist_symbols)
+
             if not symbols:
-                logger.warning("⚠️ No popular stocks configured")
+                logger.warning("⚠️ No stocks to update (no popular stocks or watchlists configured)")
                 return
 
-            logger.info(f"📊 Updating {len(symbols)} popular stocks: {', '.join(symbols)}")
+            # Track which symbols are new
+            new_symbols = set(symbols) - self._tracked_symbols
+            if new_symbols:
+                logger.info(f"✨ Adding {len(new_symbols)} new symbols to tracker: {', '.join(sorted(new_symbols))}")
+
+            # Update tracked symbols
+            self._tracked_symbols.update(symbols)
+
+            logger.info(f"📊 Updating {len(symbols)} stocks ({len(popular_symbols)} popular + {len(watchlist_symbols)} from watchlists)")
 
             # Initialize clients
             yf_client = await get_yfinance_client()

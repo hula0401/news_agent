@@ -96,10 +96,21 @@ export function WatchlistCard() {
             <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
-      ) : error && symbols.length === 0 ? (
-        <div className="text-sm text-red-500">{error.message || String(error)}</div>
       ) : symbols.length === 0 ? (
         <div className="text-sm text-muted-foreground">No symbols yet.</div>
+      ) : error ? (
+        <div className="text-center py-4">
+          <p className="text-sm text-red-500 mb-1">Unable to load prices</p>
+          <p className="text-xs text-muted-foreground mb-3">Backend may be offline</p>
+          <div className="space-y-2">
+            {symbols.map((symbol) => (
+              <div key={symbol} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="font-mono text-xs font-semibold text-gray-600">{symbol}</span>
+                <span className="text-xs text-muted-foreground">—</span>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
           {prices.length > 0 ? (

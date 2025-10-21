@@ -10,7 +10,7 @@ PYTHON := $(shell command -v python3 || command -v python)
 endif
 endif
 
-.PHONY: help install install-dev install-test run-server run-server-hf src run-tests test-backend test-src test-integration test-coverage test-fast clean lint format check-deps setup-env db-apply schema-apply db-seed upstash-test stop-servers
+.PHONY: help install install-dev install-test run-server run-server-hf src run-tests test-all test-backend test-backend-api test-backend-local test-backend-hf test-src test-integration test-e2e test-vad test-coverage test-fast test-check clean lint format check-deps setup-env db-apply schema-apply db-seed upstash-test stop-servers
 
 # Default target
 help:
@@ -29,16 +29,22 @@ help:
 	@echo "  run-frontend   Start frontend development server (local backend)"
 	@echo "  run-frontend-remote Start frontend development server (remote Render backend)"
 	@echo "  src            Start voice agent (runs python -m src.main)"
-	@echo "  run-tests      Run all tests"
-	@echo "  test-backend   Run backend tests only"
-	@echo "  test-src       Run source component tests only"
-	@echo "  test-integration Run integration tests only"
+	@echo ""
+	@echo "Testing:"
+	@echo "  run-tests      Run basic test suite (run_tests.py)"
+	@echo "  test-all       Run comprehensive test suite (run_all_tests.py)"
+	@echo "  test-backend   Run all backend tests"
+	@echo "  test-backend-api Run backend API tests only"
+	@echo "  test-backend-local Run backend local tests (core, websocket, API)"
+	@echo "  test-backend-hf Run Hugging Face backend tests"
+	@echo "  test-src       Run source component tests (src/)"
+	@echo "  test-integration Run integration tests"
+	@echo "  test-e2e       Run end-to-end tests"
+	@echo "  test-vad       Run VAD and interruption tests"
 	@echo "  test-coverage  Run tests with coverage report"
 	@echo "  test-fast      Run fast tests only (exclude slow tests)"
-	@echo "  test-render     Test Render WebSocket deployment"
-	@echo "  test-render-sample Test Render with specific sample"
-	@echo "  test-render-health Test Render health endpoint only"
-	@echo "  test-hf-space   Test Hugging Face Space ASR"
+	@echo "  test-check     Run utility check scripts"
+	@echo "  test-hf-space  Test Hugging Face Space ASR"
 	@echo "  test-hf-space-sample Test HF Space with specific sample"
 	@echo ""
 	@echo "Code Quality:"
@@ -128,37 +134,58 @@ src:
 
 # Run tests
 run-tests:
-	@echo "Running all tests..."
+	@echo "Running all tests (basic suite)..."
 	@uv run python tests/run_tests.py
 
+test-all:
+	@echo "Running comprehensive test suite..."
+	@uv run python tests/run_all_tests.py
+
 test-backend:
-	@echo "Running backend tests..."
-	@uv run pytest tests/backend/ -v --tb=short --timeout=15
+	@echo "Running all backend tests..."
+	@uv run pytest tests/backend/ -v --tb=short --timeout=30
+
+test-backend-api:
+	@echo "Running backend API tests..."
+	@uv run pytest tests/backend/api/ -v --tb=short --timeout=30
+
+test-backend-local:
+	@echo "Running backend local tests (core, websocket, API)..."
+	@uv run pytest tests/backend/local/ -v --tb=short --timeout=30
+
+test-backend-hf:
+	@echo "Running Hugging Face backend tests..."
+	@uv run pytest tests/backend_huggingface/ -v --tb=short --timeout=30
 
 test-src:
 	@echo "Running source component tests..."
-	@uv run pytest tests/src/ -v --tb=short --timeout=15
+	@uv run pytest tests/src/ -v --tb=short --timeout=30
 
 test-integration:
 	@echo "Running integration tests..."
-	@uv run pytest tests/integration/ -v --tb=short --timeout=15
+	@uv run pytest tests/integration/ -v --tb=short --timeout=30
+
+test-e2e:
+	@echo "Running end-to-end tests..."
+	@uv run pytest tests/e2e/ -v --tb=short --timeout=60
+
+test-vad:
+	@echo "Running VAD and interruption tests..."
+	@uv run python tests/run_vad_tests.py
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	@uv run pytest tests/ --cov=backend --cov=src --cov-report=html --cov-report=term --timeout=15
+	@uv run pytest tests/ --cov=backend --cov=src --cov-report=html --cov-report=term --timeout=30
 
 test-fast:
 	@echo "Running fast tests only..."
-	@uv run pytest tests/ -v --tb=short -m "not slow" --timeout=15
+	@uv run pytest tests/ -v --tb=short -m "not slow" --timeout=30
 
-test-e2e:
-	@echo "Running end-to-end tests (frontend + backend)..."
-	@chmod +x tests/e2e/run_e2e_tests.sh
-	@tests/e2e/run_e2e_tests.sh
-
-test-vad:
-	@echo "Running VAD tests..."
-	@python tests/run_vad_tests.py
+test-check:
+	@echo "Running utility check scripts..."
+	@uv run python tests/check_users.py
+	@uv run python tests/check_fk.py
+	@uv run python tests/check_session_update.py
 
 # Code quality
 lint:

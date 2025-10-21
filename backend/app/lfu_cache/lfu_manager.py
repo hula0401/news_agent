@@ -130,30 +130,37 @@ class LFUCacheManager:
                 'params': [cache_key, cache_type]
             }).execute()
 
-            if result.data:
+            # Check if result.data is a list and has elements
+            if result.data and isinstance(result.data, list) and len(result.data) > 0:
                 row = result.data[0]
-                access_count = row['access_count']
-                first_access = row['first_access']
-                last_access = row['last_access']
+                access_count = row.get('access_count', 1)
+                first_access = row.get('first_access', current_time)
+                last_access = row.get('last_access', current_time)
+            else:
+                # Database table might not exist or query failed silently
+                # Use default values to continue gracefully
+                access_count = 1
+                first_access = current_time
+                last_access = current_time
 
-                # Calculate new frequency score
-                frequency_score = self.calculate_frequency_score(
-                    access_count, first_access, last_access, current_time
-                )
+            # Calculate new frequency score
+            frequency_score = self.calculate_frequency_score(
+                access_count, first_access, last_access, current_time
+            )
 
-                # Update frequency score in database
-                update_query = """
-                    UPDATE cache_access_stats
-                    SET frequency_score = $1, updated_at = NOW()
-                    WHERE cache_key = $2
-                """
-                self.db.client.rpc('exec_sql', {
-                    'query': update_query,
-                    'params': [frequency_score, cache_key]
-                }).execute()
+            # Update frequency score in database
+            update_query = """
+                UPDATE cache_access_stats
+                SET frequency_score = $1, updated_at = NOW()
+                WHERE cache_key = $2
+            """
+            self.db.client.rpc('exec_sql', {
+                'query': update_query,
+                'params': [frequency_score, cache_key]
+            }).execute()
 
-                # Update Redis LFU sorted set
-                await self._redis_zadd(f"{cache_type}:lfu", frequency_score, cache_key)
+            # Update Redis LFU sorted set
+            await self._redis_zadd(f"{cache_type}:lfu", frequency_score, cache_key)
 
         except Exception as e:
             # Gracefully handle missing cache_access_stats table or other errors

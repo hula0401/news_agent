@@ -4,6 +4,51 @@ Comprehensive guide for testing the Voice News Agent application, covering backe
 
 ## Recent Updates
 
+### 2025-10-20 - Updated Makefile Test Commands
+
+**Summary**: Reorganized all Makefile test commands to match the actual test directory structure. All `make test-*` commands now work correctly and target the appropriate test suites.
+
+**New Test Commands**:
+```bash
+# Basic test suites
+make run-tests           # Run basic test suite (run_tests.py)
+make test-all            # Run comprehensive test suite (run_all_tests.py)
+
+# Backend tests (organized by location)
+make test-backend        # Run all backend tests (309 tests)
+make test-backend-api    # Run backend API tests only (75 tests)
+make test-backend-local  # Run backend local tests (186 tests: core, websocket, API)
+make test-backend-hf     # Run Hugging Face backend tests (8 tests)
+
+# Component tests
+make test-src            # Run source component tests (56 tests)
+make test-integration    # Run integration tests (29 tests)
+make test-e2e            # Run end-to-end tests (4 tests)
+
+# Specialized test suites
+make test-vad            # Run VAD and interruption tests (run_vad_tests.py)
+make test-coverage       # Run tests with coverage report
+make test-fast           # Run fast tests only (exclude slow tests)
+make test-check          # Run utility check scripts (check_users, check_fk, etc.)
+```
+
+**Test Organization**:
+- `tests/backend/api/` - 75 REST API endpoint tests
+- `tests/backend/local/` - 186 local backend tests (core, websocket, API)
+- `tests/backend_huggingface/` - 8 Hugging Face integration tests
+- `tests/src/` - 56 source component tests
+- `tests/integration/` - 29 integration tests
+- `tests/e2e/` - 4 end-to-end tests
+
+**Files Modified**:
+- [Makefile](../../Makefile:13) - Updated `.PHONY` declaration
+- [Makefile](../../Makefile:33-48) - Updated help section with organized test commands
+- [Makefile](../../Makefile:130-182) - Updated all test targets with correct paths
+
+**Impact**: All test commands now work correctly. Use `make help` to see the full list of available test commands.
+
+---
+
 ### 2025-10-19 - Comprehensive API Testing & 100% Coverage
 
 **Summary**: Created comprehensive test suite for all REST API endpoints, achieving 100% test coverage (53/53 tests passing). Fixed multiple API issues including router registration, validation, and caching.
@@ -103,35 +148,88 @@ All tests use `pytest` as the testing framework with async support via `pytest-a
 ```
 tests/
 ├── conftest.py                          # Global fixtures and configuration
-├── run_tests.py                         # Test runner script
-├── backend/
-│   ├── local/
-│   │   ├── api/                        # API endpoint tests
+├── run_tests.py                         # Basic test runner script
+├── run_all_tests.py                     # Comprehensive test runner
+├── run_vad_tests.py                     # VAD and interruption test runner
+├── pytest.ini                           # Pytest configuration
+│
+├── backend/                             # Backend tests (309 tests)
+│   ├── api/                            # REST API endpoint tests (75 tests)
+│   │   ├── test_health_endpoints.py    # Health/status endpoints
+│   │   ├── test_conversation_api.py    # Conversation management
+│   │   ├── test_news_api.py            # News endpoints
+│   │   ├── test_voice_api.py           # Voice command endpoints
+│   │   ├── test_user_api.py            # User management
+│   │   ├── test_stocks_api.py          # Stock data endpoints
+│   │   └── test_voice_settings_api.py  # Voice settings
+│   ├── local/                          # Local backend tests (186 tests)
+│   │   ├── api/                        # Local API tests
 │   │   │   ├── test_api_user.py
 │   │   │   ├── test_api_voice.py
 │   │   │   ├── test_api_news.py
-│   │   │   └── test_api_conversation_log.py
+│   │   │   ├── test_api_conversation_log.py
+│   │   │   └── test_voice_settings.py
 │   │   ├── core/                       # Core service tests
 │   │   │   ├── test_core_websocket_manager.py
 │   │   │   ├── test_core_agent_wrapper.py
-│   │   │   └── test_voice.py
+│   │   │   ├── test_voice.py
+│   │   │   ├── test_vad_validation.py
+│   │   │   ├── test_interruption_flow.py
+│   │   │   ├── test_streaming_llm_tts.py
+│   │   │   ├── test_sensevoice_integration.py
+│   │   │   └── test_audio_validator.py
 │   │   └── websocket/                  # WebSocket integration tests
 │   │       ├── test_websocket_integration.py
 │   │       └── test_websocket_wav_audio.py
-│   ├── cloud/                          # Cloud deployment tests
-│   └── mutual/                         # Shared backend tests
-├── src/                                # Source component tests
-│   ├── test_agent.py
-│   ├── test_voice_input.py
-│   └── test_voice_output.py
-├── integration/                        # End-to-end tests
-│   └── test_api_integration.py
+│   ├── cloud/                          # Cloud deployment tests (placeholder)
+│   └── mutual/                         # Shared backend tests (placeholder)
+│
+├── backend_huggingface/                 # Hugging Face tests (8 tests)
+│   ├── api/
+│   │   └── test_hf_space_api.py        # HF Space ASR integration
+│   └── performance/                     # Performance tests (placeholder)
+│
+├── src/                                # Source component tests (56 tests)
+│   ├── test_agent.py                   # NewsAgent functionality
+│   ├── test_streaming.py               # Streaming LLM/TTS
+│   ├── test_voice_input.py             # Voice input processing
+│   └── test_voice_output.py            # Voice output/TTS
+│
+├── integration/                        # Integration tests (29 tests)
+│   ├── conftest.py                     # Integration test fixtures
+│   ├── test_api_integration.py         # API integration tests
+│   ├── test_e2e_vad_interruption.py    # E2E VAD/interruption flows
+│   └── run_vad_tests.py                # VAD test runner
+│
+├── e2e/                                # End-to-end tests (4 tests)
+│   └── test_conversation_complete_flow.py  # Complete conversation flows
+│
 ├── testing_utils/                      # Test utilities
-│   └── voice_encoder.py
-└── voice_samples/                      # Test audio samples
-    ├── voice_samples.json              # Sample configuration
-    └── encoded/                        # Pre-encoded audio files
+│   └── voice_encoder.py                # Audio encoding utilities
+│
+├── voice_samples/                      # Test audio samples
+│   ├── voice_samples.json              # Sample configuration
+│   ├── wav/                            # WAV format samples
+│   └── encoded_compressed_opus/        # Opus format samples
+│
+├── check_*.py                          # Utility check scripts
+│   ├── check_users.py                  # Verify user data
+│   ├── check_fk.py                     # Check foreign keys
+│   └── check_session_update.py         # Check session updates
+│
+└── utils/                              # Additional test utilities
+    └── generate_test_audio.py          # Generate test audio files
 ```
+
+**Test Count Summary**:
+- Backend tests: 309 total
+  - API tests: 75
+  - Local tests: 186
+  - HF tests: 8
+- Source tests: 56
+- Integration tests: 29
+- E2E tests: 4
+- **Total: ~482 tests**
 
 ---
 
@@ -182,34 +280,100 @@ make run-server-hf
 
 ## Running Tests
 
+### Quick Reference
+
+```bash
+# Basic test suites
+make run-tests           # Run basic test suite (run_tests.py)
+make test-all            # Run comprehensive test suite (run_all_tests.py)
+
+# Backend tests (organized by location)
+make test-backend        # Run all backend tests (309 tests)
+make test-backend-api    # Run backend API tests only (75 tests)
+make test-backend-local  # Run backend local tests (186 tests)
+make test-backend-hf     # Run Hugging Face backend tests (8 tests)
+
+# Component tests
+make test-src            # Run source component tests (56 tests)
+make test-integration    # Run integration tests (29 tests)
+make test-e2e            # Run end-to-end tests (4 tests)
+
+# Specialized test suites
+make test-vad            # Run VAD and interruption tests
+make test-coverage       # Run tests with coverage report
+make test-fast           # Run fast tests only (exclude slow)
+make test-check          # Run utility check scripts
+```
+
 ### All Tests
 
 ```bash
-# Run all tests using the test runner
+# Run all tests using the basic test runner
 make run-tests
+
+# Run comprehensive test suite (all tests with detailed output)
+make test-all
 
 # Or directly with pytest
 uv run pytest tests/ -v
 ```
 
-### Specific Test Categories
+### Backend Tests (Organized by Location)
 
 ```bash
-# Backend tests only
+# All backend tests (309 tests total)
 make test-backend
-# Equivalent: uv run pytest tests/backend/ -v --tb=short --timeout=15
+# Equivalent: uv run pytest tests/backend/ -v --tb=short --timeout=30
 
-# Source component tests only
+# Backend API tests only (75 tests - REST endpoints)
+make test-backend-api
+# Equivalent: uv run pytest tests/backend/api/ -v --tb=short --timeout=30
+
+# Backend local tests (186 tests - core, websocket, local API)
+make test-backend-local
+# Equivalent: uv run pytest tests/backend/local/ -v --tb=short --timeout=30
+
+# Hugging Face backend tests (8 tests - HF Space integration)
+make test-backend-hf
+# Equivalent: uv run pytest tests/backend_huggingface/ -v --tb=short --timeout=30
+```
+
+### Component Tests
+
+```bash
+# Source component tests (56 tests - voice I/O, agent, streaming)
 make test-src
-# Equivalent: uv run pytest tests/src/ -v --tb=short --timeout=15
+# Equivalent: uv run pytest tests/src/ -v --tb=short --timeout=30
 
-# Integration tests only
+# Integration tests (29 tests - API integration, workflows)
 make test-integration
-# Equivalent: uv run pytest tests/integration/ -v --tb=short --timeout=15
+# Equivalent: uv run pytest tests/integration/ -v --tb=short --timeout=30
 
-# Fast tests (exclude slow tests)
+# End-to-end tests (4 tests - complete user flows)
+make test-e2e
+# Equivalent: uv run pytest tests/e2e/ -v --tb=short --timeout=60
+```
+
+### Specialized Test Suites
+
+```bash
+# VAD and interruption tests (comprehensive suite)
+make test-vad
+# Equivalent: uv run python tests/run_vad_tests.py
+
+# Run with options
+uv run python tests/run_vad_tests.py --quick        # Quick subset
+uv run python tests/run_vad_tests.py --vad-only     # VAD validation only
+uv run python tests/run_vad_tests.py --interruption-only  # Interruption tests only
+uv run python tests/run_vad_tests.py --e2e-only     # E2E tests only
+
+# Utility check scripts (database checks, FK constraints, etc.)
+make test-check
+# Runs: check_users.py, check_fk.py, check_session_update.py
+
+# Fast tests only (exclude slow tests marked with @pytest.mark.slow)
 make test-fast
-# Equivalent: uv run pytest tests/ -v -m "not slow" --timeout=15
+# Equivalent: uv run pytest tests/ -v -m "not slow" --timeout=30
 ```
 
 ### Specific Test Files

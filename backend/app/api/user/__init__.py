@@ -218,7 +218,13 @@ async def add_watchlist_stock(
     request: AddWatchlistRequest,
     agent=Depends(get_agent)
 ):
-    """Add stock to user's watchlist."""
+    """
+    Add stock to user's watchlist.
+
+    This endpoint also:
+    1. Immediately fetches the stock price if not in cache/DB
+    2. Adds the stock to the background scheduler for automatic updates
+    """
     try:
         # Get current preferences
         preferences = await agent.get_user_preferences(request.user_id)
@@ -226,7 +232,9 @@ async def add_watchlist_stock(
 
         # Add stock if not already present
         symbol_upper = request.symbol.upper()
-        if symbol_upper not in current_stocks:
+        is_new_stock = symbol_upper not in current_stocks
+
+        if is_new_stock:
             current_stocks.append(symbol_upper)
 
             # Update preferences
@@ -236,6 +244,25 @@ async def add_watchlist_stock(
 
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to add stock")
+
+            # Immediately fetch stock price and add to scheduler
+            try:
+                from ...services import get_stock_price_service
+                stock_service = await get_stock_price_service()
+
+                # Fetch price immediately (this also adds to scheduler if not cached)
+                price_data = await stock_service.get_stock_price(symbol_upper, refresh=False)
+
+                if price_data:
+                    return {
+                        "message": f"Stock '{symbol_upper}' added to watchlist",
+                        "watchlist": current_stocks,
+                        "price": price_data.get("price"),
+                        "change_percent": price_data.get("change_percent")
+                    }
+            except Exception as e:
+                # Log error but don't fail the request
+                print(f"⚠️ Warning: Could not fetch price for {symbol_upper}: {e}")
 
         return {"message": f"Stock '{symbol_upper}' added to watchlist", "watchlist": current_stocks}
 

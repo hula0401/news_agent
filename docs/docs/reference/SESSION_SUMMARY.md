@@ -1,4 +1,55 @@
-# Development Session Summary: VAD Configuration & Audio Compression
+# Development Session Summary
+
+## Recent Updates
+
+### 2025-10-20 - Frontend Watchlist Fixes & Complete Mock Data Removal
+**Summary**: Fixed watchlist alignment in profile settings and completely eliminated ALL sources of fake/random stock prices
+
+**Files Modified**:
+- [frontend/src/pages/ProfilePage.tsx](../../frontend/src/pages/ProfilePage.tsx) - Complete watchlist refactor with error handling
+- [frontend/src/components/WatchlistCard.tsx](../../frontend/src/components/WatchlistCard.tsx) - Added proper error state display
+- [frontend/src/services/stock-price-service.ts](../../frontend/src/services/stock-price-service.ts) - Complete removal of mock data code paths
+- [frontend/src/hooks/stocks/useWatchlistPrices.ts](../../frontend/src/hooks/stocks/useWatchlistPrices.ts) - Clear prices on error
+
+**Changes Made**:
+1. **Removed ALL Fake Price Generation (100% Complete)**:
+   - Previously: `addStock()` created random price data (`price: Math.random() * 500`)
+   - Previously: `stock-price-service.ts` had `USE_MOCK_DATA` flag and `generateStockPrice()` fallback
+   - **Now**: Completely removed mock imports and all code paths that generate fake data
+   - `getPrice()` and `getBatchPrices()` now throw errors immediately if backend fails
+   - No `USE_MOCK_DATA` flag, no fallback logic, no mock function calls
+   - When backend is offline, shows clear error message instead of fake data
+
+2. **Aligned Watchlist with WatchlistCard**:
+   - Uses `useWatchlistPrices` hook for real-time price data
+   - Fetches watchlist from `/api/user/preferences` endpoint
+   - Displays skeleton loaders while prices load
+   - Shows "Market Open" indicator when market is active
+
+3. **Improved Add/Remove Functionality**:
+   - Add: Validates symbol doesn't already exist, saves to backend API
+   - Remove: Updates backend immediately with PUT request
+   - Both operations include optimistic UI updates with error rollback
+
+4. **Better Error Handling**:
+   - ProfilePage: Shows "Unable to load stock prices" with backend offline message
+   - WatchlistCard: Displays "Backend may be offline" error state
+   - Both show stock symbols without prices when API fails
+   - Users can still manage watchlist (add/remove) even when backend is down
+
+5. **Better UX**:
+   - Empty state message: "No stocks in watchlist yet. Add one above!"
+   - Loading skeletons while prices fetch
+   - Inline stock cards with symbol, name, price, change, and remove button
+   - Consistent styling with WatchlistCard component
+
+**Impact**: Users NEVER see fake/random prices. When backend is offline, frontend displays clear error messages instead of misleading data. This ensures data integrity and prevents confusion.
+
+---
+
+## Previous Sessions
+
+### 2025-10-15 - VAD Configuration & Audio Compression
 
 **Date:** 2025-10-15
 **Duration:** ~2 hours
