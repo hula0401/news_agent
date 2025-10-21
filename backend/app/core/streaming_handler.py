@@ -37,16 +37,13 @@ class StreamingVoiceHandler:
         self.sensevoice_model = None
         self._model_loaded = False
         self.hf_space_asr = None
+        self._hf_space_enabled = True  # Prefer HF Space by default
         self.audio_validator = None
 
         # Get configuration
         from ..config import get_settings
         self.settings = get_settings()
         self._use_local_asr = self.settings.use_local_asr
-
-        # If USE_LOCAL_ASR=true, disable HF Space and use local model as primary
-        # If USE_LOCAL_ASR=false, use HF Space as primary (production mode on Render)
-        self._hf_space_enabled = not self._use_local_asr
 
         # Initialize audio validator with config settings
         if AUDIO_VALIDATOR_AVAILABLE:
@@ -200,9 +197,7 @@ class StreamingVoiceHandler:
         """
         Transcribe audio chunk with support for compressed formats.
 
-        ASR selection based on USE_LOCAL_ASR setting:
-        - USE_LOCAL_ASR=true: Use local SenseVoice model (for development)
-        - USE_LOCAL_ASR=false: Use HuggingFace Space (for production/Render)
+        Uses HuggingFace Space as primary ASR, falls back to local model.
 
         Args:
             audio_data: Raw audio bytes (may be compressed)
