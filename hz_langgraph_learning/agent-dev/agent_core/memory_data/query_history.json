@@ -1,0 +1,22 @@
+[
+  {
+    "query": "why tesla is trading high today?",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-04T05:49:53.000230",
+    "summary": "I don't have clear data showing Tesla is trading high today, and the available information doesn't provide specific reasons for any potential price movement. The sources mention overnight trading activity on Blue Ocean ATS but don't explain any upward trend. Here are the key takeaways: Limited market data available. No clear news catalyst identified for potential price increase. Overnight trading session mentioned but no specific drivers provided",
+    "memory_id": "mem_1762235393.000161"
+  },
+  {
+    "query": "what happened to tesla today? Why it trading up?",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-04T06:14:53.927999",
+    "summary": "Based on the available information, I cannot definitively determine why Tesla is trading up today. The limited sources mention overnight session trading activity on the Blue Ocean ATS but don't provide specific news or events that would explain price movement. Here are the key takeaways: Limited relevant sources found with low research confidence. Price may reflect overnight trading activity on Blue Ocean ATS (8 PM to 4 AM ET, Sunday through Thursday). No specific news events or market catalysts identified in the available data",
+    "memory_id": "mem_1762236893.9279"
+  }
+]

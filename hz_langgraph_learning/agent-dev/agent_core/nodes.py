@@ -56,29 +56,53 @@ INTENT_INSTRUCTIONS = """You are a market data analyst assistant. Analyze the us
 **IMPORTANT**: A single query can have MULTIPLE intents. For example:
 - "what's the price of GLD, what happened to it" → TWO intents: [price_check for GLD, news_search for GLD]
 - "Compare NVDA vs AMD and tell me latest news" → TWO intents: [comparison for NVDA+AMD, news_search for NVDA+AMD]
+- "add google to my watchlist and tell me what's in my watchlist" → TWO intents: [watchlist add GOOGL, watchlist view]
 
 **Intent Types**:
    - price_check: User wants current/recent price of specific stock(s)
    - news_search: User wants news/updates about stock(s)
+   - watchlist: User wants to add/remove/view their watchlist (EXPLICIT commands only)
+   - research: User asks analytical questions (P/E ratio, earnings, valuation, etc.)
    - chat: Casual conversation, greetings, or questions unrelated to market data
 
-**Symbols**: Extract ticker symbols (e.g., "TSLA", "NVDA", "AMD"). If none mentioned, return empty list.
+**Watchlist Intent** (CRITICAL - READ CAREFULLY):
+   ALWAYS trigger "watchlist" when user says:
+   - "add SYMBOL to watchlist/my watchlist" → watchlist_action = "add"
+   - "track SYMBOL" / "watch SYMBOL" → watchlist_action = "add"
+   - "remove SYMBOL from watchlist" → watchlist_action = "remove"
+   - "show/view/list my watchlist" → watchlist_action = "view"
+   - "what's in my watchlist" → watchlist_action = "view"
 
-**Timeframe**: Extract time period:
-   - "1min", "5min" for intraday
-   - "1d" (default) for daily
-   - "1w" for weekly
-   - "1mo" for monthly
-   - "2y" for 2-year historical
+   For company names like "Google", convert to ticker (GOOGL, GOOG)
+
+**Output Format**:
+Return JSON with "intents" array containing objects with these fields:
+- intent: One of [price_check, news_search, watchlist, research, chat, unknown]
+- symbols: Array of ticker symbols (e.g., ["TSLA", "NVDA"])
+- timeframe: "1d" (default), "1w", "1mo", etc.
+- watchlist_action: (ONLY for watchlist intent) "add", "remove", or "view"
+- reasoning: Brief explanation
 
 Examples:
-- "What's Tesla's stock price?" → [{"intent": "price_check", "symbols": ["TSLA"], "timeframe": "1d"}]
-- "what's the price of GLD, what happened to it" → [{"intent": "price_check", "symbols": ["GLD"], "timeframe": "1d"}, {"intent": "news_search", "symbols": ["GLD"], "timeframe": "1d"}]
-- "Compare NVDA and AMD performance" → [{"intent": "comparison", "symbols": ["NVDA", "AMD"], "timeframe": "1d"}]
-- "Hello, how are you?" → [{"intent": "chat", "symbols": [], "timeframe": "1d"}]
-- "What's the weather today?" → [{"intent": "chat", "symbols": [], "timeframe": "1d"}]
+1. "What's Tesla's stock price?"
+   {"intents": [{"intent": "price_check", "symbols": ["TSLA"], "timeframe": "1d", "reasoning": "user wants current price"}]}
 
-Be precise and identify ALL intents in the query."""
+2. "add META to my watchlist"
+   {"intents": [{"intent": "watchlist", "symbols": ["META"], "watchlist_action": "add", "reasoning": "explicit add command"}]}
+
+3. "add google to my watchlist and tell me what's in my watchlist"
+   {"intents": [
+     {"intent": "watchlist", "symbols": ["GOOGL"], "watchlist_action": "add", "reasoning": "add google"},
+     {"intent": "watchlist", "symbols": [], "watchlist_action": "view", "reasoning": "view watchlist"}
+   ]}
+
+4. "show my watchlist"
+   {"intents": [{"intent": "watchlist", "symbols": [], "watchlist_action": "view", "reasoning": "view watchlist"}]}
+
+5. "remove NVDA from watchlist"
+   {"intents": [{"intent": "watchlist", "symbols": ["NVDA"], "watchlist_action": "remove", "reasoning": "remove command"}]}
+
+Be precise and identify ALL intents. ALWAYS include "watchlist_action" for watchlist intents."""
 
 
 async def node_intent_analyzer(state: MarketState) -> MarketState:
@@ -138,6 +162,10 @@ User query: {query}"""
 
         # Extract JSON from response
         content = response.content.strip()
+
+        # Clean control characters that cause JSON parse errors
+        content = ''.join(char if ord(char) >= 32 or char in ['\n', '\t', '\r'] else ' ' for char in content)
+
         result_dict = None
 
         # Strategy 1: Try parsing whole content first (most reliable)
@@ -207,7 +235,8 @@ User query: {query}"""
                 symbols=corrected_symbols,  # Use corrected symbols
                 timeframe=intent_data.get("timeframe", "1d"),
                 reasoning=intent_data.get("reasoning", ""),
-                keywords=intent_data.get("keywords", [])  # Extract keywords from LLM response
+                keywords=intent_data.get("keywords", []),  # Extract keywords from LLM response
+                watchlist_action=intent_data.get("watchlist_action")  # Extract watchlist action
             )
             intents.append(intent_item)
             all_symbols.extend(intent_item.symbols)
@@ -229,11 +258,13 @@ User query: {query}"""
             state.symbols = all_symbols
             state.timeframe = intents[0].timeframe
             state.keywords = intents[0].keywords  # Save keywords from first intent
+            state.watchlist_action = intents[0].watchlist_action  # Save watchlist action from first intent
         else:
             state.intent = "unknown"
             state.symbols = []
             state.timeframe = "1d"
             state.keywords = []
+            state.watchlist_action = None
 
         logger.info(f"✅ Detected {len(intents)} intent(s):")
         for i, intent in enumerate(intents, 1):
@@ -290,6 +321,55 @@ User query: {query}"""
         state.timeframe = "1d"
         state.error = str(e)
         return state
+
+
+# ====== NODE 1.5: WATCHLIST EXECUTOR ======
+async def node_watchlist_executor(state: MarketState) -> MarketState:
+    """
+    Execute watchlist commands (add/remove/view).
+
+    Only runs if "watchlist" intent is detected.
+    Updates state.summary with watchlist operation result.
+    """
+    # Check if watchlist intent exists
+    has_watchlist = any(intent.intent == "watchlist" for intent in state.intents)
+
+    if not has_watchlist:
+        logger.info("⏭️  Skipping watchlist executor (no watchlist intent)")
+        return state
+
+    from agent_core.tools.watchlist_tools import handle_watchlist_command
+
+    logger.info("🗂️  Executing watchlist command")
+
+    # Get watchlist intent (should be only one)
+    watchlist_intent = next((intent for intent in state.intents if intent.intent == "watchlist"), None)
+
+    if not watchlist_intent:
+        logger.warning("⚠️  Watchlist intent not found")
+        return state
+
+    action = watchlist_intent.watchlist_action or "view"
+    symbols = watchlist_intent.symbols
+
+    logger.info(f"   Action: {action}")
+    logger.info(f"   Symbols: {symbols}")
+
+    try:
+        result = handle_watchlist_command(action=action, symbols=symbols)
+
+        # Update state with watchlist result
+        state.summary = result["message"]
+        state.raw_data["watchlist"] = result.get("watchlist", [])
+
+        logger.info(f"✅ Watchlist command executed: {result['message']}")
+
+    except Exception as e:
+        logger.error(f"❌ Watchlist execution error: {e}", exc_info=True)
+        state.summary = f"Error executing watchlist command: {str(e)}"
+        state.error = str(e)
+
+    return state
 
 
 # ====== NODE 2: TOOL SELECTOR ======
@@ -1047,6 +1127,9 @@ Respond naturally (no JSON format needed for chat)."""
         if not content:
             raise ValueError("LLM returned empty response")
 
+        # Clean control characters that cause JSON parse errors
+        content = ''.join(char if ord(char) >= 32 or char in ['\n', '\t', '\r'] else ' ' for char in content)
+
         # Remove markdown code blocks if present
         if content.startswith("```"):
             # Extract content between ```json and ``` or ``` and ```
@@ -1419,6 +1502,9 @@ async def node_response_generator(state: MarketState) -> MarketState:
         # Check if content is empty
         if not content:
             raise ValueError("LLM returned empty response")
+
+        # Clean control characters that cause JSON parse errors
+        content = ''.join(char if ord(char) >= 32 or char in ['\n', '\t', '\r'] else ' ' for char in content)
 
         # Remove markdown code blocks if present
         if content.startswith("```"):

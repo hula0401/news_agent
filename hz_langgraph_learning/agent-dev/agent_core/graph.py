@@ -15,6 +15,7 @@ load_dotenv()
 from agent_core.state import MarketState
 from agent_core.nodes import (
     node_intent_analyzer,
+    node_watchlist_executor,  # Execute watchlist commands
     node_tool_selector,
     node_parallel_fetcher,
     node_web_research,  # Web research for news articles
@@ -37,16 +38,20 @@ else:
 
 
 # ====== CONDITIONAL ROUTING ======
-def route_after_intent(state: MarketState) -> Literal["chat_response", "general_research", "tool_selector"]:
+def route_after_intent(state: MarketState) -> Literal["watchlist_executor", "chat_response", "general_research", "tool_selector"]:
     """
     Route after intent analysis based on intent types.
 
     Routes:
+    - watchlist → watchlist_executor
     - chat/unknown → chat_response
     - research → general_research
     - market intents → tool_selector
     """
     intents = state.intents
+
+    # Check if any intent is 'watchlist'
+    has_watchlist = any(intent.intent == "watchlist" for intent in intents)
 
     # Check if any intent is 'research'
     has_research = any(intent.intent == "research" for intent in intents)
@@ -54,7 +59,10 @@ def route_after_intent(state: MarketState) -> Literal["chat_response", "general_
     # Check if all intents are conversational (chat or unknown)
     is_all_conversational = all(intent.intent in ["chat", "unknown"] for intent in intents)
 
-    if is_all_conversational:
+    if has_watchlist:
+        logger.info("Watchlist intent detected - routing to watchlist executor")
+        return "watchlist_executor"
+    elif is_all_conversational:
         logger.info("All intents are chat/unknown - routing directly to response generator")
         return "chat_response"
     elif has_research:
@@ -165,6 +173,7 @@ def build_graph() -> StateGraph:
 
     # Add nodes
     graph.add_node("intent_analyzer", node_intent_analyzer)
+    graph.add_node("watchlist_executor", node_watchlist_executor)  # Execute watchlist commands
     graph.add_node("tool_selector", node_tool_selector)
     graph.add_node("parallel_fetcher", node_parallel_fetcher)
     graph.add_node("web_research", node_web_research)  # Web research for stock news
@@ -175,6 +184,7 @@ def build_graph() -> StateGraph:
     graph.add_edge(START, "intent_analyzer")
 
     # Conditional routing after intent analysis
+    # - watchlist → watchlist_executor → END (direct execution, no need for response_generator)
     # - chat/unknown → response_generator
     # - research → general_research
     # - market intents → tool_selector
@@ -182,11 +192,15 @@ def build_graph() -> StateGraph:
         "intent_analyzer",
         route_after_intent,
         {
+            "watchlist_executor": "watchlist_executor",
             "chat_response": "response_generator",
             "general_research": "general_research",
             "tool_selector": "tool_selector",
         },
     )
+
+    # Watchlist executor goes directly to END (summary already set by executor)
+    graph.add_edge("watchlist_executor", END)
 
     # General research goes directly to response generator
     graph.add_edge("general_research", "response_generator")
@@ -251,6 +265,26 @@ async def run_market_agent(query: str, **kwargs) -> MarketState:
         final_state = MarketState(**final_state_dict)
 
         logger.info(f"Agent execution complete. Memory ID: {final_state.memory_id}")
+
+        # TRACK CONVERSATION IN CURRENT SESSION
+        # This accumulates data during the session, will be summarized at session end
+        try:
+            from agent_core.long_term_memory import track_conversation
+
+            # Only track meaningful conversations (not pure chat or errors)
+            if final_state.summary and final_state.intent not in ["chat", "unknown"]:
+                track_conversation(
+                    query=final_state.query,
+                    intent=final_state.intent,
+                    symbols=final_state.symbols,
+                    summary=final_state.summary
+                )
+                logger.debug("📝 Tracked conversation in session")
+
+        except Exception as mem_error:
+            # Don't fail the whole request if tracking fails
+            logger.error(f"⚠️  Failed to track conversation: {mem_error}")
+
         return final_state
 
     except Exception as e:

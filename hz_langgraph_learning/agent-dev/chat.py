@@ -298,6 +298,10 @@ async def interactive_chat(
     chat_session_id = start_new_chat_session()
     log_file = get_chat_log_path()
 
+    # Initialize long-term memory session tracking
+    from agent_core.long_term_memory import start_session
+    start_session(chat_session_id)
+
     print_welcome()
 
     # Show log file location
@@ -318,6 +322,11 @@ async def interactive_chat(
 
             # Handle commands
             if user_input.lower() in ["exit", "quit", "bye"]:
+                # Finalize session and update long-term memory
+                from agent_core.long_term_memory import finalize_session
+                console.print("\n[dim]💾 Updating long-term memory...[/dim]")
+                await finalize_session()
+
                 if save_history and conversation_history:
                     save_conversation_history()
                 console.print("\n[yellow]Goodbye! 👋[/yellow]")
@@ -357,12 +366,22 @@ async def interactive_chat(
             console.print()
 
         except KeyboardInterrupt:
+            # Finalize session
+            from agent_core.long_term_memory import finalize_session
+            console.print("\n[dim]💾 Updating long-term memory...[/dim]")
+            await finalize_session()
+
             if save_history and conversation_history:
                 save_conversation_history()
             console.print("\n\n[yellow]Goodbye! 👋[/yellow]")
             break
 
         except EOFError:
+            # Finalize session
+            from agent_core.long_term_memory import finalize_session
+            console.print("\n[dim]💾 Updating long-term memory...[/dim]")
+            await finalize_session()
+
             if save_history and conversation_history:
                 save_conversation_history()
             console.print("\n[yellow]Goodbye! 👋[/yellow]")

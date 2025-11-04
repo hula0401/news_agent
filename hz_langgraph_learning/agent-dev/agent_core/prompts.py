@@ -11,8 +11,22 @@ Guidelines:
 - Base insights on data, never speculate
 - Cite sources for news
 - Use chat history for context in multi-turn conversations
+- Use user's past interests to personalize responses
 - Voice mode: conversational, natural language
 - Text mode: structured markdown with headers/bullets"""
+
+
+# ====== LONG-TERM MEMORY FORMATTER ======
+def format_user_memory_context() -> str:
+    """Format user's long-term memory for inclusion in prompts."""
+    try:
+        from agent_core.long_term_memory import get_user_context
+        context = get_user_context()
+        if context:
+            return f"\nUser's Long-Term Interests:\n{context}\n"
+        return ""
+    except Exception:
+        return ""
 
 
 # ====== CHAT HISTORY FORMATTER ======
@@ -41,15 +55,33 @@ def format_chat_history(chat_history: list) -> str:
 
 # ====== INTENT ANALYZER PROMPT ======
 def get_intent_analyzer_prompt(chat_history: list) -> str:
-    """Get intent analyzer prompt with chat history."""
+    """Get intent analyzer prompt with chat history and long-term memory."""
     history_str = format_chat_history(chat_history)
+    memory_context = format_user_memory_context()
 
-    return f"""Previous conversation:
+    return f"""{memory_context}Previous conversation:
 {history_str}
 
 Analyze user query and extract ALL intents as JSON array.
 
-Intent types: price_check, news_search, market_summary, comparison, research, chat, unknown
+Intent types: price_check, news_search, market_summary, comparison, research, watchlist, chat, unknown
+
+- watchlist: EXPLICIT commands to manage watchlist (add/remove/view stocks)
+  Examples: "add GOOGL to watchlist", "remove META", "show my watchlist"
+
+  **CRITICAL - Watchlist Detection:**
+  ALWAYS trigger "watchlist" intent when user says:
+  - "add SYMBOL to watchlist/my watchlist" → watchlist_action = "add"
+  - "track SYMBOL" / "watch SYMBOL" → watchlist_action = "add"
+  - "remove SYMBOL from watchlist" → watchlist_action = "remove"
+  - "show/view/list my watchlist" / "what's in my watchlist" → watchlist_action = "view"
+
+  For company names like "Google", convert to ticker (GOOGL, GOOG)
+
+  **Watchlist Examples:**
+  - "add google to my watchlist" → {{"intent":"watchlist", "symbols":["GOOGL"], "watchlist_action":"add"}}
+  - "what's in my watchlist" → {{"intent":"watchlist", "symbols":[], "watchlist_action":"view"}}
+  - "add google to my watchlist and tell me what's in my watchlist" → TWO intents: watchlist(add GOOGL), watchlist(view)
 
 - research: General information/research queries (not stock-specific)
   Examples: "is that related to earnings call?", "what is an earnings call?", "tell me about AI spending", "what is meta p/e ratio?"
@@ -92,7 +124,9 @@ Examples:
 - "Hello" → [{{"intent":"chat","symbols":[],"timeframe":"1d","keywords":[]}}]
 
 Respond ONLY with JSON:
-{{"intents": [{{"intent":"...", "symbols":["..."], "timeframe":"1d", "keywords":["..."], "reasoning":"..."}}]}}"""
+{{"intents": [{{"intent":"...", "symbols":["..."], "timeframe":"1d", "keywords":["..."], "watchlist_action":"...", "reasoning":"..."}}]}}
+
+**IMPORTANT**: For watchlist intents, ALWAYS include "watchlist_action" field ("add", "remove", or "view")"""
 
 
 # ====== RESPONSE GENERATOR PROMPT ======
@@ -104,11 +138,12 @@ def get_response_generator_prompt(
     intents: str,
     output_mode: str
 ) -> str:
-    """Get response generator prompt with all context."""
+    """Get response generator prompt with all context including long-term memory."""
     history_str = format_chat_history(chat_history)
+    memory_context = format_user_memory_context()
     mode_instruction = "Natural conversation" if output_mode == "voice" else "Structured markdown"
 
-    return f"""Previous conversation:
+    return f"""{memory_context}Previous conversation:
 {history_str}
 
 User: {query}
@@ -135,10 +170,11 @@ Example response:
 
 # ====== CHAT-ONLY RESPONSE PROMPT ======
 def get_chat_response_prompt(chat_history: list, query: str, output_mode: str) -> str:
-    """Get chat response prompt."""
+    """Get chat response prompt with long-term memory context."""
     history_str = format_chat_history(chat_history)
+    memory_context = format_user_memory_context()
 
-    return f"""Previous conversation:
+    return f"""{memory_context}Previous conversation:
 {history_str}
 
 User: {query}

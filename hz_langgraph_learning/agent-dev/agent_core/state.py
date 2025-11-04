@@ -50,11 +50,12 @@ class ChecklistItem:
 @dataclass
 class IntentItem:
     """Single intent with its context."""
-    intent: Literal["price_check", "news_search", "market_summary", "comparison", "research", "chat", "unknown"]
+    intent: Literal["price_check", "news_search", "market_summary", "comparison", "research", "chat", "watchlist", "unknown"]
     symbols: List[str] = field(default_factory=list)
     timeframe: str = "1d"
     reasoning: str = ""
     keywords: List[str] = field(default_factory=list)  # For research intent: extracted keywords (e.g., ["P/E ratio", "earnings"])
+    watchlist_action: Optional[str] = None  # For watchlist intent: "add", "remove", or "view"
 
 
 @dataclass
@@ -94,10 +95,11 @@ class MarketState:
     research_checklist: List[ChecklistItem] = field(default_factory=list)
 
     # Legacy fields (for backward compatibility, derived from first intent)
-    intent: Literal["price_check", "news_search", "market_summary", "comparison", "research", "chat", "unknown"] = "unknown"
+    intent: Literal["price_check", "news_search", "market_summary", "comparison", "research", "chat", "watchlist", "unknown"] = "unknown"
     symbols: List[str] = field(default_factory=list)  # Extracted ticker symbols
     timeframe: str = "1d"  # "1min", "5min", "1h", "1d", "1w", "1mo"
     keywords: List[str] = field(default_factory=list)  # Extracted keywords for research queries (e.g., ["P/E ratio", "earnings", "valuation"])
+    watchlist_action: Optional[str] = None  # For watchlist intent: "add", "remove", or "view"
 
     # Tool selection output
     selected_tools: List[str] = field(default_factory=list)  # ["price", "news", "comparison"]
