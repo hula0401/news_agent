@@ -84,3 +84,12 @@ env_files/*.env
 *.sln
 *.sw?
 node_modules/
+# macOS
+.DS_Store
+
+# LangGraph cache files
+**/.langgraph_api/*.pckl
+**/.langgraph_api/store.*
+
+# Memory data files
+memory_data/*.json

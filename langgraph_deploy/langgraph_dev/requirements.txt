@@ -1,0 +1,17 @@
+fastapi>=0.110
+uvicorn[standard]>=0.22
+
+# LangGraph / LangChain
+langgraph>=0.2.35
+langchain-core>=0.2.0
+langchain-openai>=0.1.6
+pydantic>=2.0
+
+# LLM and data sources
+alpha_vantage>=2.3.1
+praw>=7.7.1
+requests>=2.31.0
+pandas>=2.1.0
+numpy>=1.26.0
+
+

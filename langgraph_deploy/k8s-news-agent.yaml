@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-agent
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: news-agent
+  template:
+    metadata:
+      labels:
+        app: news-agent
+    spec:
+      containers:
+        - name: news-agent
+          image: us-central1-docker.pkg.dev/starlit-factor-468901-s9/news-agent-repo/news-agent:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: news-agent-secrets
+          livenessProbe:   # 健康检查，K8s 会定期请求这个端点
+            httpGet:
+              path: /query?q=ping
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:       # (可选) 限制资源
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: news-agent-service
+spec:
+  type: LoadBalancer     # 云环境自动分配公网IP (Minikube用NodePort)
+  selector:
+    app: news-agent
+  ports:
+    - port: 80           # 对外暴露的端口
+      targetPort: 8000   # 容器内部端口

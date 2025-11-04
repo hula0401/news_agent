@@ -1,0 +1,13 @@
+{
+  "dockerfile_lines": [],
+  "graphs": {
+    "simple_graph": "./hz_langgraph_learning/notebooks/langchain-academy-main/module-1/studio/simple.py:graph",
+    "router": "./hz_langgraph_learning/notebooks/langchain-academy-main/module-1/studio/router.py:graph",
+    "agent": "./hz_langgraph_learning/notebooks/langchain-academy-main/module-1/studio/agent.py:graph"
+  },
+  "env": "./hz_langgraph_learning/notebooks/langchain-academy-main/module-1/studio/.env",
+  "python_version": "3.11",
+  "dependencies": [
+    "."
+  ]
+}

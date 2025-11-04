@@ -1,0 +1,16 @@
+{
+  "dockerfile_lines": [],
+  "graphs": {
+    "market_assistant": "./agent_core/graph.py:compile_graph"
+  },
+  "env": ".env",
+  "python_version": "3.11",
+  "dependencies": [
+    "langchain-openai>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langgraph>=0.2.0",
+    "aiohttp>=3.9.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0"
+  ]
+}

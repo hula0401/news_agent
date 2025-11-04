@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["voice", "news", "ai", "agent", "real-time"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -51,7 +51,7 @@ dependencies = [
     "edge-tts==7.0.2",
     "webrtcvad==2.0.10",
     "pydub==0.25.1",
-    "gradio-client==1.13.3",  # For HuggingFace Space API
+    "gradio-client==1.13.3", # For HuggingFace Space API
     # Language detection
     "langid==1.1.6",
     "langdetect==1.0.9",
@@ -69,6 +69,17 @@ dependencies = [
     "numpy>=1.24.0",
     # Scheduling
     "apscheduler>=3.10.0",
+    # Reddit API
+    "praw>=7.8.1",
+    "asyncpraw>=7.8.1",
+    # LangGraph
+    "langgraph>=1.0.0",
+    "jupyter>=1.1.1",
+    "ipykernel>=7.0.1",
+    "playwright>=1.55.0",
+    "rich>=14.2.0",
+    "tavily>=1.1.0",
+    "pypdf>=6.1.3",
 ]
 
 [project.optional-dependencies]

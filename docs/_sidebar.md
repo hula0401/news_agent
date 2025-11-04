@@ -10,6 +10,7 @@
   - Setup
     - [Local Setup](docs/LOCAL_SETUP.md)
     - [Deployment (Render)](docs/RENDER_DEPLOYMENT.md)
+    - [Reddit API Setup](docs/reference/REDDIT_API_SETUP.md)
     - [Testing](docs/TESTING.md)
   - Architecture
     - [System Design](docs/reference/SYSTEM_DESIGN_CURRENT.md)
@@ -18,6 +19,7 @@
     - [Database Setup](docs/reference/DATABASE_SETUP.md)
   - Quick Start
     - [Stock & News Quick Start](docs/reference/STOCK_NEWS_QUICK_START.md)
+    - [PRD: LangGraph Migration (Graph-ready)](docs/reference/PRD_LangGraph_Migration_AlphaIntel_Reddit_OptIn.md)
   - Guides
     - [Audio Pipeline](docs/reference/AUDIO_PIPELINE_FIXES.md)
     - [VAD & Compression](docs/reference/VAD_AND_COMPRESSION_GUIDE.md)

@@ -1,0 +1,16 @@
+[
+  {
+    "symbol": "TSLA",
+    "added_at": "2025-10-23T08:19:16.076498",
+    "notes": "Tesla - EV leader",
+    "alert_price_above": 300.0,
+    "alert_price_below": 200.0
+  },
+  {
+    "symbol": "NVDA",
+    "added_at": "2025-10-23T08:19:16.077233",
+    "notes": "NVIDIA - AI chips",
+    "alert_price_above": null,
+    "alert_price_below": null
+  }
+]

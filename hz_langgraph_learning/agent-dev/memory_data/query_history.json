@@ -1,0 +1,114 @@
+[
+  {
+    "query": "What's the latest on NVDA? Show me price and news",
+    "intent": "price_check",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:09:06.525023",
+    "summary": "NVDA is currently trading at $201.03, up 4.13% with high volume of 297,970,590 shares. The stock is showing strong positive momentum today. Here are the key takeaways: NVDA up 4.13% with significant trading volume. CEO Jensen Huang positioning company at heart of quantum computing's next chapter. NVQLink move suggests GPUs will power - not be replaced by - quantum innovation. High volume indicates strong investor interest. Market expecting Federal Reserve rate cuts which could boost tech stocks",
+    "memory_id": "mem_1761750546.524982"
+  },
+  {
+    "query": "What's the latest on NVDA? Show me price and news",
+    "intent": "price_check",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:09:54.549159",
+    "summary": "NVDA is currently trading at $201.03, up 4.13% with high volume of 297,970,590 shares. Here are the key takeaways: NVDA stock is up 4.13% with significantly high trading volume. CEO Jensen Huang is positioning NVDA at the heart of quantum computing's next chapter. NVDA's NVQLink move suggests their GPUs will power - not be replaced by - quantum innovation",
+    "memory_id": "mem_1761750594.549123"
+  },
+  {
+    "query": "What's the latest on NVDA? Show me price and news",
+    "intent": "price_check",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:11:13.400432",
+    "summary": "NVDA is currently trading at $201.03, up 4.13% with high volume of 297,970,590 shares. The stock is showing strong positive momentum today. Here are the key takeaways: NVIDIA stock is up 4.13% with significantly high trading volume. CEO Jensen Huang is positioning NVIDIA at the heart of quantum computing's next chapter. NVIDIA's NVQLink move suggests GPUs will power (not be replaced by) quantum innovation. Analyst Gene Munster believes NVIDIA has ended its 'quantum headache'",
+    "memory_id": "mem_1761750673.400379"
+  },
+  {
+    "query": "stock price of Boardcom",
+    "intent": "price_check",
+    "symbols": [
+      "AVGO"
+    ],
+    "timestamp": "2025-10-29T08:13:30.517057",
+    "summary": "Broadcom (AVGO) is currently trading at $372.97, up 2.85% with a volume of 21,056,048 shares. Here are the key takeaways: Stock price increased by 2.85%. High trading volume of over 21 million shares",
+    "memory_id": "mem_1761750810.51702"
+  },
+  {
+    "query": "why? what happened?",
+    "intent": "news_search",
+    "symbols": [
+      "AVGO"
+    ],
+    "timestamp": "2025-10-29T08:14:17.630735",
+    "summary": "Broadcom (AVGO) is trading at $372.97, up 2.85% with a volume of 21,056,048 shares. However, there's no specific news about Broadcom in the current data to explain this price movement. Here are the key takeaways: Stock price increased by 2.85%. Trading volume is at 21,056,048 shares. No specific Broadcom news identified in current data",
+    "memory_id": "mem_1761750857.630641"
+  },
+  {
+    "query": "How about NVDA?",
+    "intent": "price_check",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:15:05.676322",
+    "summary": "NVDA is trading at $201.03, up 4.13% with a volume of 297,970,590 shares. Here are the key takeaways: Price increased by 4.13%. High volume activity of nearly 300 million shares. Strong positive momentum similar to AVGO's performance earlier",
+    "memory_id": "mem_1761750905.676306"
+  },
+  {
+    "query": "why? what happened? It is high!",
+    "intent": "news_search",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:16:02.582430",
+    "summary": "NVDA is trading at $201.03, up 4.13% with high volume of 297,970,590 shares. The significant increase appears to be driven by positive developments in quantum computing positioning and potential Fed rate cuts. Here are the key takeaways: Nvidia's CEO Jensen Huang is positioning the company at the heart of quantum computing's next chapter, with GPUs expected to power rather than be replaced by quantum innovation. High volume trading activity (297M+ shares) indicates strong investor interest. Potential Fed rate cuts (98% odds of 25bps reduction) could make growth stocks like NVDA more attractive. AI sector continues to show positive momentum with new funding platforms emerging",
+    "memory_id": "mem_1761750962.582407"
+  },
+  {
+    "query": "Do you think that's relate to global politics? Any thing happening?",
+    "intent": "news_search",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:17:55.532458",
+    "summary": "NVDA's 4.13% increase appears to be driven by positive developments in quantum computing positioning and broader AI market trends, rather than global politics. Here are the key takeaways: Nvidia's CEO Jensen Huang is positioning the company at the heart of quantum computing's next chapter with NVQLink. AI market continues to expand with new AI-powered platforms being launched. Potential Federal Reserve rate cuts may be boosting investor sentiment toward tech stocks",
+    "memory_id": "mem_1761751075.532427"
+  },
+  {
+    "query": "really? can you check?",
+    "intent": "news_search",
+    "symbols": [
+      "NVDA"
+    ],
+    "timestamp": "2025-10-29T08:20:06.918695",
+    "summary": "Yes, I can confirm that NVDA's recent price increase is indeed related to positive developments in quantum computing, as mentioned in the news. Here are the key takeaways: Nvidia CEO Jensen Huang's NVQLink move positions the company at the heart of quantum computing's next chapter. News suggests GPUs will power - not be replaced by - quantum innovation. Gene Munster states Nvidia might have ended its 'quantum headache'. This development likely contributed to the 4.13% price increase with high volume",
+    "memory_id": "mem_1761751206.918664"
+  },
+  {
+    "query": "what's the stock price of Google?",
+    "intent": "price_check",
+    "symbols": [
+      "GOOGL",
+      "GOOG"
+    ],
+    "timestamp": "2025-10-30T05:46:09.406610",
+    "summary": "Google's stock is up today, with GOOGL trading at $274.57 (+2.55%) and GOOG at $275.17 (+2.44%). Here are the key takeaways: Both classes of Google stock are up approximately 2.5%. GOOGL has higher trading volume at 43.58M shares compared to GOOG's 26.29M shares",
+    "memory_id": "mem_1761828369.406552"
+  },
+  {
+    "query": "what's happened to it?",
+    "intent": "news_search",
+    "symbols": [
+      "GOOGL",
+      "GOOG"
+    ],
+    "timestamp": "2025-10-30T05:47:02.633347",
+    "summary": "From our previous conversation, Google's stock was up with GOOGL trading at $274.57 (+2.55%) and GOOG at $275.17 (+2.44%). However, I don't have current market data or specific news about what caused this movement. Here are the key takeaways: Google stock was up approximately 2.5% in our last conversation. No specific news about Google is available in current data to explain the movement. The market appears to be experiencing various sector movements including crypto, banking, and retirement planning",
+    "memory_id": "mem_1761828422.633277"
+  }
+]

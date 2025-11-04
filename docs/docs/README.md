@@ -15,6 +15,7 @@ Version: Backend v0.2.1
 | ☁️ **Deploy** | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Render.com cloud deployment guide |
 | 🧪 **Testing** | [TESTING.md](TESTING.md) | Testing strategy and WebSocket tests |
 | 🏗️ **Architecture** | [../reference/SYSTEM_DESIGN_CURRENT.md](../reference/SYSTEM_DESIGN_CURRENT.md) | System architecture and design |
+| 🔌 **External API** | [../reference/REDDIT_API_SETUP.md](../reference/REDDIT_API_SETUP.md) | Reddit API credentials and usage |
 
 ---
 

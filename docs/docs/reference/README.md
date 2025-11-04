@@ -6,6 +6,7 @@ This folder contains detailed technical documentation and design references for 
 
 - **API_DESIGN.md** - API endpoint design and specifications
 - **DATABASE_SETUP.md** - Database schema setup and Supabase configuration
+- **REDDIT_API_SETUP.md** - External Reddit API credentials and local usage
 - **STREAMING_AND_DEPLOYMENT.md** - WebSocket streaming implementation and Render deployment guide
 - **CONTINUOUS_VOICE_GUIDE.md** - Guide for using the continuous voice interface with real-time interruption
 
