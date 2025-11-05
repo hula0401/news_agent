@@ -8,7 +8,7 @@ import time
 from typing import Dict, Any, Optional, Set
 from datetime import datetime
 from fastapi import WebSocket, WebSocketDisconnect
-from ..core.agent_wrapper import get_agent
+from ..core.agent_wrapper_langgraph import get_agent
 from ..database import get_database
 from ..cache import get_cache
 from .streaming_handler import get_streaming_handler
@@ -107,7 +107,7 @@ class WebSocketManager:
         self.conversation_logger.log_model_info(
             "agent",
             loaded=True,
-            model_path="NewsAgent"
+            model_path="LangGraphAgent"
         )
 
         self._initialized = True
@@ -237,6 +237,13 @@ class WebSocketManager:
                 # End conversation tracking (updates session_end, is_active=False)
                 await self.conversation_tracker.end_session(session_id)
 
+                # Finalize agent session (runs LLM summarizer for long-term memory)
+                if user_id and self.agent:
+                    try:
+                        await self.agent.finalize_session(user_id, session_id)
+                    except Exception as finalize_error:
+                        print(f"⚠️ Error finalizing agent session: {finalize_error}")
+
                 # Clean up session data
                 if session_id in self.session_data:
                     del self.session_data[session_id]
@@ -343,23 +350,25 @@ class WebSocketManager:
                 }
             })
             
-            # Process command through agent
+            # Process command through agent (use process_text_command for LangGraph agent)
             start_time = datetime.now()
-            result = await self.agent.process_voice_command(command, user_id, session_id)
+            result = await self.agent.process_text_command(user_id=user_id, query=command, session_id=session_id)
             processing_time = (datetime.now() - start_time).total_seconds() * 1000
-            
+
             # Send text response first
-            response_text = result["response_text"]
+            response_text = result.get("response", "")
             await self.send_message(session_id, {
                 "event": "voice_response",
                 "data": {
                     "text": response_text,
-                    "audio_url": result.get("audio_url"),
-                    "response_type": result["response_type"],
-                    "processing_time_ms": int(processing_time),
+                    "audio_url": None,  # Audio URL not provided by LangGraph agent
+                    "response_type": result.get("intent", "unknown"),
+                    "processing_time_ms": int(result.get("processing_time_ms", processing_time)),
                     "session_id": session_id,
-                    "news_items": result.get("news_items", []),
-                    "stock_data": result.get("stock_data"),
+                    "news_items": [],  # News items would be in raw_data if needed
+                    "stock_data": result.get("raw_data", {}),
+                    "intent": result.get("intent"),
+                    "symbols": result.get("symbols", []),
                     "timestamp": datetime.now().isoformat(),
                     "streaming": True  # Indicate streaming TTS will follow
                 }
@@ -504,9 +513,12 @@ class WebSocketManager:
 
             print(f"🎤 Processing audio chunk for session {session_id}: {audio_size} bytes ({audio_format})")
 
+            # Get user_id from session
+            user_id = self.session_data[session_id]["user_id"]
+
             # Process with streaming handler (ASR -> LLM -> TTS)
             result = await self.streaming_handler.process_voice_command(
-                session_id, audio_chunk, audio_format
+                session_id, audio_chunk, audio_format, user_id=user_id
             )
 
             print(f"🎤 Processing result: {result}")
@@ -681,9 +693,12 @@ class WebSocketManager:
             transcription_text = ""
             full_response_text = ""
 
+            # Get user_id from session
+            user_id = self.session_data[session_id]["user_id"]
+
             # Process with streaming handler (ASR -> Streaming LLM -> Concurrent TTS)
             async for chunk in self.streaming_handler.process_voice_command_streaming(
-                session_id, audio_chunk, audio_format
+                session_id, audio_chunk, audio_format, user_id=user_id
             ):
                 # Check for interruption
                 if self.streaming_tasks.get(session_id, False):

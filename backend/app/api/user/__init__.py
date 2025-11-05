@@ -8,7 +8,7 @@ from ...models.user import (
     AddTopicRequest,
     AddWatchlistRequest
 )
-from ...core.agent_wrapper import get_agent
+from ...core.agent_wrapper_langgraph import get_agent
 from ...database import get_database
 from ...cache import get_cache
 

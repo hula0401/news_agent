@@ -2,7 +2,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ..core.websocket_manager_v2 import get_audio_ws_manager
 from ..core.streaming_handler import get_streaming_handler
-from ..core.agent_wrapper import get_agent
+from ..core.agent_wrapper_langgraph import get_agent
 
 router = APIRouter()
 

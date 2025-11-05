@@ -407,18 +407,11 @@ class StreamingVoiceHandler:
         self,
         session_id: str,
         audio_chunk: bytes,
-        format: str = "webm",
-        user_id: str = None
+        format: str = "webm"
     ) -> Dict[str, Any]:
         """
         Process incoming audio chunk through ASR, LLM, and TTS.
         This method orchestrates the full voice pipeline.
-
-        Args:
-            session_id: Session ID
-            audio_chunk: Audio data
-            format: Audio format (webm, wav, etc.)
-            user_id: User ID (if not provided, uses "anonymous")
         """
         from ..core.agent_wrapper_langgraph import get_agent # Lazy import to avoid circular dependency
         agent = await get_agent()
@@ -431,8 +424,7 @@ class StreamingVoiceHandler:
                 return {"success": False, "error": "No transcription"}
 
             # 2. LLM: Get agent response (LangGraph agent uses process_text_command)
-            if not user_id:
-                user_id = "anonymous"
+            user_id = "anonymous" # TODO: Get actual user_id from session
             response_result = await agent.process_text_command(user_id=user_id, query=transcription, session_id=session_id)
             response_text = response_result.get("response", "I'm sorry, I couldn't process that.")
 
@@ -451,18 +443,11 @@ class StreamingVoiceHandler:
         self,
         session_id: str,
         audio_chunk: bytes,
-        format: str = "webm",
-        user_id: str = None
+        format: str = "webm"
     ):
         """
         Process voice command with streaming LLM response and concurrent TTS.
         This yields both transcription and audio chunks as they become available.
-
-        Args:
-            session_id: Session ID
-            audio_chunk: Audio data
-            format: Audio format (webm, wav, etc.)
-            user_id: User ID (if not provided, uses "anonymous")
 
         Yields:
             Dict with either:
@@ -488,27 +473,50 @@ class StreamingVoiceHandler:
             print(f"✅ Transcribed: {transcription}")
             yield {"type": "transcription", "text": transcription}
 
-            # 2. Get LLM response (LangGraph agent doesn't support streaming yet)
-            if not user_id:
-                user_id = "anonymous"
+            # 2. Stream LLM response and do TTS concurrently
+            user_id = "anonymous"  # TODO: Get actual user_id from session
 
-            print(f"🤖 Getting LLM response for: {transcription}")
-
-            # Get full response from agent
-            response_result = await agent.process_text_command(user_id=user_id, query=transcription, session_id=session_id)
-            response_text = response_result.get("response", "I'm sorry, I couldn't process that.")
-
-            # Yield the full response as a single chunk
-            yield {"type": "text_chunk", "text": response_text}
-
-            # Now process for TTS
-            text_buffer = response_text
+            # Buffer for accumulating text for TTS
+            text_buffer = ""
             sentence_endings = [".", "!", "?", "\n"]
 
-            # Stream TTS for the complete response
-            if response_text.strip():
-                print(f"🔊 Starting TTS for: {response_text[:50]}...")
-                async for audio_chunk_data in self.stream_tts_audio(response_text.strip()):
+            print(f"🤖 Starting streaming LLM response for: {transcription}")
+
+            async for text_chunk in agent.stream_voice_response(transcription, user_id, session_id):
+                if not text_chunk:
+                    continue
+
+                # Yield the text chunk for display
+                yield {"type": "text_chunk", "text": text_chunk}
+
+                # Accumulate text for TTS
+                text_buffer += text_chunk
+
+                # Check if we have a complete sentence to speak
+                # This enables faster response by starting TTS before full response completes
+                should_speak = False
+                for ending in sentence_endings:
+                    if ending in text_buffer:
+                        should_speak = True
+                        break
+
+                # Or if buffer is long enough (avoid very long waits)
+                if len(text_buffer) > 100:
+                    should_speak = True
+
+                if should_speak and text_buffer.strip():
+                    # Stream TTS for the accumulated text
+                    print(f"🔊 Starting TTS for: {text_buffer[:50]}...")
+                    async for audio_chunk_data in self.stream_tts_audio(text_buffer.strip()):
+                        yield {"type": "audio_chunk", "data": audio_chunk_data}
+
+                    # Clear buffer after speaking
+                    text_buffer = ""
+
+            # Speak any remaining text
+            if text_buffer.strip():
+                print(f"🔊 Starting TTS for remaining text: {text_buffer[:50]}...")
+                async for audio_chunk_data in self.stream_tts_audio(text_buffer.strip()):
                     yield {"type": "audio_chunk", "data": audio_chunk_data}
 
             # Signal completion

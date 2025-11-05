@@ -1,0 +1,92 @@
+[
+  {
+    "query": "why tesla is trading high today?",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-04T05:49:53.000230",
+    "summary": "I don't have clear data showing Tesla is trading high today, and the available information doesn't provide specific reasons for any potential price movement. The sources mention overnight trading activity on Blue Ocean ATS but don't explain any upward trend. Here are the key takeaways: Limited market data available. No clear news catalyst identified for potential price increase. Overnight trading session mentioned but no specific drivers provided",
+    "memory_id": "mem_1762235393.000161"
+  },
+  {
+    "query": "what happened to tesla today? Why it trading up?",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-04T06:14:53.927999",
+    "summary": "Based on the available information, I cannot definitively determine why Tesla is trading up today. The limited sources mention overnight session trading activity on the Blue Ocean ATS but don't provide specific news or events that would explain price movement. Here are the key takeaways: Limited relevant sources found with low research confidence. Price may reflect overnight trading activity on Blue Ocean ATS (8 PM to 4 AM ET, Sunday through Thursday). No specific news events or market catalysts identified in the available data",
+    "memory_id": "mem_1762236893.9279"
+  },
+  {
+    "query": "What is the price of META?",
+    "intent": "price_check",
+    "symbols": [
+      "META"
+    ],
+    "timestamp": "2025-11-05T07:37:35.996317",
+    "summary": "META is currently trading at $627.32, down 0.11% with a volume of 27,356,513 shares. Here are the key takeaways: META is slightly down 0.11%. High trading volume of over 27 million shares. Price remains above $627 level",
+    "memory_id": "mem_1762328255.996269"
+  },
+  {
+    "query": "\u4eca\u5929\u8fd9\u4e2a\u7279\u65af\u62c9\u7684\u80a1\u7968\u600e\u4e48\u8fd9\u4e48\u635e\u554a\u80fd\u4e0d\u80fd\u7ed9\u6211\u8bf4\u4e00\u4e0b\u4ed6\u4e3a\u4ec0\u4e48\u8fd9\u4e48\u635e\u7136\u540e\u7528\u82f1\u8bed\u56de\u7b54\u6211",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-05T07:42:22.008032",
+    "summary": "Based on the available information, I don't have specific data on why TSLA is performing poorly today. The sources indicate that the price you're seeing may reflect overnight trading activity on the Blue Ocean ATS (8 PM to 4 AM ET, Sunday through Thursday), which can sometimes show different patterns than regular market hours. Without current market data or specific news events, I cannot determine the exact reason for the decline. Here are the key takeaways: The price may reflect overnight trading activity rather than regular market hours. Limited relevant sources found to explain current performance. Tesla operates in Automotive and Energy Generation and Storage segments",
+    "memory_id": "mem_1762328542.007992"
+  },
+  {
+    "query": "what's the current stock price of metata",
+    "intent": "price_check",
+    "symbols": [
+      "META"
+    ],
+    "timestamp": "2025-11-05T07:59:00.973587",
+    "summary": "META is currently trading at $627.32, down 0.11% with high volume of 27.36 million shares. Here are the key takeaways: Slight price decline of 0.11%. High trading volume of 27.36 million shares",
+    "memory_id": "mem_1762329540.973477"
+  },
+  {
+    "query": "so what's the latest news of matter",
+    "intent": "news_search",
+    "symbols": [
+      "META"
+    ],
+    "timestamp": "2025-11-05T08:00:27.398197",
+    "summary": "Meta (META) is trading at $627.32, down 1.63% at close. Overnight trading shows slight decline to $626.50. Evercore ISI reduced price target to $875 from $930 while maintaining 'Outperform' rating. META is recognized as one of the best monopoly stocks to buy now. Here are the key takeaways: META down 1.63% in regular trading. Analysts maintain 'Outperform' rating despite price target reduction. META recognized as strong monopoly stock with market dominance",
+    "memory_id": "mem_1762329627.398167"
+  },
+  {
+    "query": "ah what's happening to mad",
+    "intent": "news_search",
+    "symbols": [
+      "MAD"
+    ],
+    "timestamp": "2025-11-05T08:18:45.817634",
+    "summary": "Mader Group Limited (ASX:MAD) is currently trading at 8.40 AUD, down 0.56% (-0.05 AUD) as of the November 5th close. Despite the recent slight decline, the stock has shown strong performance with a 14% increase over the past three months. Here are the key takeaways: Stock down 0.56% in recent trading but up 14% over past three months. Company has achieved 61% CAGR, outpacing earnings growth over five-year period. Provides specialist technical services in mining, energy, and industrial sectors",
+    "memory_id": "mem_1762330725.817592"
+  },
+  {
+    "query": "i mean what is its stock price",
+    "intent": "price_check",
+    "symbols": [
+      "MAD"
+    ],
+    "timestamp": "2025-11-05T08:20:41.419843",
+    "summary": "MAD (Mader Group Limited) is currently trading at $6.87, down 2.83% with a volume of 43,443 shares. Here are the key takeaways: Stock price decreased by 2.83%. Current trading volume is 43,443 shares. No recent news available for the company",
+    "memory_id": "mem_1762330841.419815"
+  },
+  {
+    "query": "tell me about what's happening to qqq",
+    "intent": "news_search",
+    "symbols": [
+      "QQQ"
+    ],
+    "timestamp": "2025-11-05T08:38:14.380857",
+    "summary": "I don't have current market data or recent news about QQQ (Invesco QQQ Trust ETF) in the provided information. The available sources only mention that QQQ trades during overnight sessions on the Blue Ocean ATS from 8 PM to 4 AM ET, Sunday through Thursday, and that returns are price return only without including dividends. Here are the key takeaways: QQQ tracks the Nasdaq-100 Index. Overnight trading available on Blue Ocean ATS. Returns don't include dividends",
+    "memory_id": "mem_1762331894.380814"
+  }
+]

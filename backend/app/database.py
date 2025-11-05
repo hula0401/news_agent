@@ -250,6 +250,127 @@ class DatabaseManager:
             print(f"❌ Error saving voice settings: {e}")
             return False
 
+    # ====== USER NOTES METHODS (Long-Term Memory) ======
+
+    async def get_user_notes(self, user_id: str) -> Optional[Dict[str, str]]:
+        """Get user's long-term memory key notes.
+
+        Args:
+            user_id: User UUID
+
+        Returns:
+            Dict with category-based notes like:
+            {
+                "stocks": "Seeking opportunities in technology and AI",
+                "investment": "Researching nuclear energy private companies"
+            }
+        """
+        try:
+            def _fetch():
+                return (
+                    self.client
+                    .table('user_notes')
+                    .select('key_notes')
+                    .eq('user_id', user_id)
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_fetch)
+
+            if result.data and len(result.data) > 0:
+                return result.data[0].get('key_notes', {})
+            return {}
+        except Exception as e:
+            print(f"❌ Error getting user notes for {user_id}: {e}")
+            return {}
+
+    async def upsert_user_notes(self, user_id: str, key_notes: Dict[str, str]) -> bool:
+        """Create or update user's long-term memory key notes.
+
+        Args:
+            user_id: User UUID
+            key_notes: Category-based notes dict
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            from datetime import datetime
+
+            def _upsert():
+                return (
+                    self.client
+                    .table('user_notes')
+                    .upsert({
+                        'user_id': user_id,
+                        'key_notes': key_notes,
+                        'updated_time': datetime.utcnow().isoformat()
+                    }, on_conflict='user_id')
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_upsert)
+            return bool(result.data)
+        except Exception as e:
+            print(f"❌ Error upserting user notes for {user_id}: {e}")
+            return False
+
+    # ====== WATCHLIST METHODS ======
+
+    async def get_user_watchlist(self, user_id: str) -> List[str]:
+        """Get user's watchlist stocks.
+
+        Args:
+            user_id: User UUID
+
+        Returns:
+            List of stock symbols like ["AAPL", "GOOGL", "META"]
+        """
+        try:
+            def _fetch():
+                return (
+                    self.client
+                    .table('users')
+                    .select('watchlist_stocks')
+                    .eq('id', user_id)
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_fetch)
+
+            if result.data and len(result.data) > 0:
+                return result.data[0].get('watchlist_stocks', [])
+            return []
+        except Exception as e:
+            print(f"❌ Error getting watchlist for {user_id}: {e}")
+            return []
+
+    async def update_user_watchlist(self, user_id: str, watchlist: List[str]) -> bool:
+        """Update user's watchlist stocks.
+
+        Args:
+            user_id: User UUID
+            watchlist: List of stock symbols
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            def _update():
+                return (
+                    self.client
+                    .table('users')
+                    .update({'watchlist_stocks': watchlist})
+                    .eq('id', user_id)
+                    .execute()
+                )
+
+            result = await asyncio.to_thread(_update)
+            return bool(result.data)
+        except Exception as e:
+            print(f"❌ Error updating watchlist for {user_id}: {e}")
+            return False
+
     async def delete_voice_settings(self, user_id: str) -> bool:
         """Delete voice settings for a user (reset to defaults)."""
         try:

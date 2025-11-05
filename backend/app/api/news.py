@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional, Dict, Any
 from ..models.news import NewsLatestRequest, NewsSearchRequest, NewsResponse, NewsSummaryRequest, NewsSummaryResponse
-from ..core.agent_wrapper import get_agent
+from ..core.agent_wrapper_langgraph import get_agent
 from ..database import get_database
 from ..cache import get_cache
 

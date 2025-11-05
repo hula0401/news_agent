@@ -311,6 +311,119 @@ class ConversationLogger:
         """Get current model information."""
         return self.model_info.copy()
 
+    def log_llm_call(
+        self,
+        session_id: str,
+        node_name: str,
+        model: str,
+        prompt: str,
+        response: str,
+        duration_ms: float,
+        status: str = "SUCCESS",
+        tokens: Optional[Dict[str, int]] = None
+    ):
+        """
+        Log detailed LLM call with full input/output.
+
+        Args:
+            session_id: Session identifier
+            node_name: Node name (e.g., "intent_analyzer", "response_generator")
+            model: Model name (e.g., "glm-4.5-flash")
+            prompt: Full input prompt
+            response: Full LLM response
+            duration_ms: Processing duration in milliseconds
+            status: SUCCESS or FAILED
+            tokens: Optional token usage dict
+        """
+        if session_id not in self.active_sessions:
+            return
+
+        separator = "=" * 80
+        log_entry = f"\n{separator}\n"
+        log_entry += f"LLM QUERY: {node_name} ({model})\n"
+        log_entry += f"{separator}\n"
+        log_entry += f"Timestamp: {datetime.now().isoformat()}\n"
+        log_entry += f"Status: {status}\n"
+        log_entry += f"Duration: {duration_ms:.2f}ms\n"
+
+        if tokens:
+            log_entry += f"Tokens: {tokens.get('prompt', 0)} prompt + {tokens.get('completion', 0)} completion = {tokens.get('total', 0)} total\n"
+
+        log_entry += f"\nINPUT:\n'''\n{prompt}\n'''\n"
+        log_entry += f"\nOUTPUT:\n'''\n{response}\n'''\n"
+
+        self.logger.info(log_entry)
+
+        # Also write to session log file immediately for real-time viewing
+        self._append_to_session_log(session_id, log_entry)
+
+    def log_tool_call(
+        self,
+        session_id: str,
+        tool_name: str,
+        tool_input: Dict[str, Any],
+        tool_output: Any,
+        duration_ms: float,
+        status: str = "SUCCESS",
+        error: Optional[str] = None
+    ):
+        """
+        Log detailed tool execution with full input/output.
+
+        Args:
+            session_id: Session identifier
+            tool_name: Tool/function name
+            tool_input: Tool input parameters as dict
+            tool_output: Tool output (will be converted to string)
+            duration_ms: Execution duration in milliseconds
+            status: SUCCESS or FAILED
+            error: Error message if failed
+        """
+        if session_id not in self.active_sessions:
+            return
+
+        separator = "=" * 80
+        log_entry = f"\n{separator}\n"
+        log_entry += f"TOOL EXECUTION: {tool_name}\n"
+        log_entry += f"{separator}\n"
+        log_entry += f"Timestamp: {datetime.now().isoformat()}\n"
+        log_entry += f"Status: {status}\n"
+        log_entry += f"Duration: {duration_ms:.2f}ms\n"
+
+        # Format input
+        log_entry += f"\nINPUT:\n"
+        log_entry += json.dumps(tool_input, indent=2, default=str) + "\n"
+
+        # Format output
+        log_entry += f"\nOUTPUT:\n"
+        if error:
+            log_entry += f"ERROR: {error}\n"
+        else:
+            if isinstance(tool_output, (dict, list)):
+                log_entry += json.dumps(tool_output, indent=2, default=str) + "\n"
+            else:
+                log_entry += str(tool_output) + "\n"
+
+        self.logger.info(log_entry)
+
+        # Also write to session log file immediately
+        self._append_to_session_log(session_id, log_entry)
+
+    def _append_to_session_log(self, session_id: str, log_entry: str):
+        """Append log entry to session's human-readable log file."""
+        try:
+            # Use chat_YYYYMMDD_HHMMSS.log format
+            if session_id in self.active_sessions:
+                session_info = self.active_sessions[session_id]
+                session_start = datetime.fromisoformat(session_info.session_start)
+                log_filename = f"chat_{session_start.strftime('%Y%m%d_%H%M%S')}.log"
+                log_file = self.log_dir / log_filename
+
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(log_entry)
+        except Exception as e:
+            self.logger.error(f"Failed to append to session log: {e}")
+
 
 # Global conversation logger instance
 conversation_logger = ConversationLogger()

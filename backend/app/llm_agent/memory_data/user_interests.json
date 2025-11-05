@@ -1,0 +1,145 @@
+{
+  "interests": [
+    {
+      "query": "add google to my watchlist and tell me what's in my watchlist",
+      "timestamp": "2025-11-04T05:36:33.088420",
+      "intent_data": {
+        "watchlist": {
+          "symbols": [
+            "GOOGL",
+            "GOOG"
+          ],
+          "action": "add"
+        }
+      },
+      "key_notes": "Add Google stocks to watchlist and view current watchlist",
+      "all_symbols": [
+        "GOOGL",
+        "GOOG"
+      ]
+    },
+    {
+      "query": "what's in my watchlist? if google is not inside, add it",
+      "timestamp": "2025-11-04T05:43:32.224324",
+      "intent_data": {
+        "watchlist": {
+          "symbols": [
+            "GOOGL",
+            "GOOG"
+          ],
+          "action": "view/add"
+        }
+      },
+      "key_notes": "User wants to check watchlist for Google stocks and add them if missing.",
+      "all_symbols": [
+        "GOOGL",
+        "GOOG"
+      ]
+    },
+    {
+      "query": "add nvda",
+      "timestamp": "2025-11-04T05:44:09.624312",
+      "intent_data": {
+        "watchlist": {
+          "symbols": [
+            "NVDA"
+          ],
+          "action": "add"
+        }
+      },
+      "key_notes": "User wants to add NVDA stock to their watchlist.",
+      "all_symbols": [
+        "NVDA"
+      ]
+    },
+    {
+      "query": "what's inside my watchlist?",
+      "timestamp": "2025-11-04T05:44:56.439400",
+      "intent_data": {
+        "watchlist": {
+          "symbols": [
+            "GOOGL",
+            "GOOG",
+            "NVDA"
+          ],
+          "action": "view"
+        }
+      },
+      "key_notes": "User wants to view their watchlist of stocks",
+      "all_symbols": [
+        "GOOGL",
+        "GOOG",
+        "NVDA"
+      ]
+    },
+    {
+      "query": "why tesla is trading high today?",
+      "timestamp": "2025-11-04T05:50:08.644555",
+      "intent_data": {
+        "news_search": {
+          "symbols": [
+            "TSLA"
+          ],
+          "topics": [
+            "trading high",
+            "price increase",
+            "stock movement",
+            "market factors"
+          ]
+        }
+      },
+      "key_notes": "Reasons for Tesla's stock price increase today.",
+      "all_symbols": [
+        "TSLA"
+      ]
+    },
+    {
+      "query": "Do a deeper research on what's going on to TSLA",
+      "timestamp": "2025-11-04T05:53:08.746938",
+      "intent_data": {
+        "research": {
+          "query": "what's going on to TSLA",
+          "keywords": [
+            "recent developments",
+            "news",
+            "market factors",
+            "events"
+          ]
+        }
+      },
+      "key_notes": "Researching recent developments and market factors affecting TSLA stock performance.",
+      "all_symbols": [
+        "TSLA"
+      ]
+    },
+    {
+      "query": "add META to my watchlist",
+      "timestamp": "2025-11-04T06:04:48.523089",
+      "intent_data": {
+        "watchlist": {
+          "symbols": [
+            "META"
+          ],
+          "action": "add"
+        }
+      },
+      "key_notes": "User wants to add META stock to their watchlist.",
+      "all_symbols": [
+        "META"
+      ]
+    }
+  ],
+  "favorite_topics": [
+    "recent developments",
+    "news",
+    "market factors",
+    "events"
+  ],
+  "favorite_symbols": [
+    "GOOGL",
+    "GOOG",
+    "NVDA",
+    "TSLA",
+    "META"
+  ]
+}

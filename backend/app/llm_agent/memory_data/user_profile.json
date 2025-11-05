@@ -1,0 +1,72 @@
+{
+  "key_notes": {
+    "stocks": "Interested in tech stocks META, TSLA, NVDA, GOOG",
+    "trading": "Monitoring TSLA for short-term & options trading",
+    "research": "Researching P/E ratios & max pain for options",
+    "watchlist": "Tracking TSLA, META, NVDA, GOOG for tech sector",
+    "news": "Following TSLA news and price movements"
+  },
+  "session_history": [
+    {
+      "session_id": "chat_20251103_220743",
+      "timestamp": "2025-11-04T06:10:09.002988",
+      "queries": [
+        "what's META p/e ratio?",
+        "add TSLA to my watchlist",
+        "what's NVDA earnings?"
+      ],
+      "symbols_discussed": [
+        "TSLA",
+        "NVDA",
+        "META"
+      ],
+      "main_topics": [],
+      "intents": [
+        "watchlist",
+        "research"
+      ]
+    },
+    {
+      "session_id": "chat_20251103_221351",
+      "timestamp": "2025-11-04T06:18:01.813129",
+      "queries": [
+        "what happened to tesla today? Why it trading up?",
+        "what's meta and google's pe ratio?"
+      ],
+      "symbols_discussed": [
+        "META",
+        "GOOG",
+        "GOOGL",
+        "TSLA"
+      ],
+      "main_topics": [],
+      "intents": [
+        "news_search",
+        "research"
+      ]
+    },
+    {
+      "session_id": "chat_20251103_233925",
+      "timestamp": "2025-11-04T08:33:27.181565",
+      "queries": [
+        "what's the max pain point for TSLA for at this Friday?",
+        "When can I expect to have the max pain point?"
+      ],
+      "symbols_discussed": [
+        "TSLA"
+      ],
+      "main_topics": [],
+      "intents": [
+        "research"
+      ]
+    }
+  ],
+  "trending_symbols": [
+    "TSLA",
+    "META",
+    "NVDA",
+    "GOOG",
+    "GOOGL"
+  ],
+  "last_updated": "2025-11-04T08:33:27.181692"
+}
