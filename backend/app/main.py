@@ -108,6 +108,24 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down Voice News Agent Backend...")
 
+    # Close all active sessions in database
+    try:
+        from .database import get_database
+        db = await get_database()
+        if db._initialized:
+            def _close_sessions():
+                return db.client.table("conversation_sessions").update({
+                    "is_active": False,
+                    "session_end": datetime.utcnow().isoformat(),
+                    "ended_at": datetime.utcnow().isoformat()
+                }).eq("is_active", True).execute()
+
+            result = await asyncio.to_thread(_close_sessions)
+            closed_count = len(result.data) if result.data else 0
+            logger.info(f"✅ Closed {closed_count} active sessions")
+    except Exception as e:
+        logger.warning(f"⚠️ Session cleanup error: {e}")
+
     # Stop conversation tracker (flush remaining messages)
     try:
         from .core.conversation_tracker import get_conversation_tracker

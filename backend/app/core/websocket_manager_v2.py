@@ -3,22 +3,26 @@ import asyncio
 import json
 import uuid
 import base64
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState
+from .conversation_tracker import get_conversation_tracker
 
 
 class AudioWebSocketManager:
     """WebSocket manager with full audio pipeline."""
-    
+
     def __init__(self):
         self.connections: Dict[str, WebSocket] = {}
-        self.user_sessions: Dict[str, str] = {}
+        self.user_sessions: Dict[str, str] = {}  # user_id -> session_id mapping
+        self.session_users: Dict[str, str] = {}  # session_id -> user_id mapping
         # Will be injected by endpoint
         self.streaming_handler = None
         self.agent = None
-        
+        # Conversation tracker for database operations
+        self.conversation_tracker = get_conversation_tracker()
+
     def set_handlers(self, streaming_handler, agent):
         """Set audio processing handlers."""
         self.streaming_handler = streaming_handler
@@ -32,13 +36,25 @@ class AudioWebSocketManager:
         return ws.client_state == WebSocketState.CONNECTED
     
     async def connect(self, websocket: WebSocket, user_id: str) -> str:
-        """Register new WebSocket connection."""
+        """Register new WebSocket connection and start session tracking."""
         session_id = str(uuid.uuid4())
         self.connections[session_id] = websocket
         self.user_sessions[user_id] = session_id
-        
+        self.session_users[session_id] = user_id
+
         print(f"✅ [CONNECT] session={session_id[:8]}..., user={user_id[:8]}...")
-        
+
+        # Start conversation session tracking in database
+        try:
+            await self.conversation_tracker.start_session(
+                session_id=session_id,
+                user_id=user_id,
+                metadata={"endpoint": "audio_websocket_v2"}
+            )
+            print(f"✅ [SESSION] Started tracking for session={session_id[:8]}...")
+        except Exception as e:
+            print(f"⚠️ [SESSION] Failed to start session tracking: {e}")
+
         await self.send(session_id, {
             "event": "connected",
             "data": {
@@ -47,14 +63,45 @@ class AudioWebSocketManager:
                 "timestamp": datetime.now().isoformat()
             }
         })
-        
+
         return session_id
     
     async def disconnect(self, session_id: str):
-        """Remove WebSocket connection."""
-        if session_id in self.connections:
-            del self.connections[session_id]
-            print(f"🔌 [DISCONNECT] session={session_id[:8]}...")
+        """Remove WebSocket connection and end session tracking."""
+        try:
+            # Get user_id before cleanup
+            user_id = self.session_users.get(session_id)
+
+            # Remove from connections
+            if session_id in self.connections:
+                del self.connections[session_id]
+                print(f"🔌 [DISCONNECT] session={session_id[:8]}...")
+
+            # Remove from user_sessions mapping
+            if user_id and user_id in self.user_sessions:
+                del self.user_sessions[user_id]
+
+            # Remove from session_users mapping
+            if session_id in self.session_users:
+                del self.session_users[session_id]
+
+            # End conversation session in database (sets is_active=False)
+            try:
+                await self.conversation_tracker.end_session(session_id)
+                print(f"✅ [SESSION] Ended session tracking for session={session_id[:8]}...")
+            except Exception as e:
+                print(f"❌ [SESSION] Failed to end session: {e}")
+
+            # Finalize agent session (long-term memory)
+            if user_id and self.agent:
+                try:
+                    await self.agent.finalize_session(user_id, session_id)
+                    print(f"✅ [MEMORY] Finalized long-term memory for session={session_id[:8]}...")
+                except Exception as e:
+                    print(f"⚠️ [MEMORY] Failed to finalize memory: {e}")
+
+        except Exception as e:
+            print(f"❌ [DISCONNECT ERROR] session={session_id[:8]}...: {e}")
     
     async def send(self, session_id: str, message: dict):
         """Send message to WebSocket."""

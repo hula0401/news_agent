@@ -35,6 +35,47 @@ Voice News Agent provides intelligent, context-aware news recommendations throug
 
 **Tech Stack:** FastAPI • Supabase • Upstash Redis • SenseVoice ASR • Edge-TTS • GLM-4-Flash
 
+### Recent Updates (2025-11-06)
+
+🎉 **Session Lifecycle Fix Complete** - [SESSION_LIFECYCLE_FIX.md](SESSION_LIFECYCLE_FIX.md):
+- ✅ Fixed `is_active` column bug (18 orphaned sessions closed)
+- ✅ Sessions properly close on WebSocket disconnect
+- ✅ Sessions properly close on server shutdown
+- ✅ Added conversation tracker to websocket_manager_v2
+- ✅ Test coverage: 7/7 scenarios passing
+- **Result**: Clean database state (0 orphaned sessions)
+
+🎉 **Proper RLS Setup Complete** - [RLS_SETUP_COMPLETE.md](RLS_SETUP_COMPLETE.md):
+- ✅ Applied database migration with unique constraint on `user_id`
+- ✅ Enabled Row Level Security with proper policies
+- ✅ Backend uses service_role key for admin operations
+- ✅ Maintains security while ensuring functionality
+- **Migration**: `20251106100142_fix_user_notes_rls_setup_correct_types`
+
+✅ **All Systems Operational**:
+- Fixed watchlist import error (`ModuleNotFoundError`)
+- Verified watchlist functionality (add/view/remove symbols)
+- **Post-session memory system working with proper RLS** 🎉
+- **Session lifecycle management working correctly** 🎉
+- Database upsert using correct `on_conflict='user_id'` with unique constraint
+- Production-ready security configuration
+
+🎯 **Memory & Session Features**:
+- ✅ Tracks all conversations in session
+- ✅ LLM analyzes and summarizes on WebSocket disconnect
+- ✅ Updates user's long-term memory in `user_notes` table (with RLS)
+- ✅ Properly closes sessions (sets `is_active=false`)
+- ✅ Graceful shutdown closes all active sessions
+- ✅ Personalizes responses based on evolving interests
+- ✅ Secure: User data isolated via RLS policies
+
+📚 **Key Documentation**:
+- **[SESSION_LIFECYCLE_FIX.md](SESSION_LIFECYCLE_FIX.md)** - Session management fix ✅
+- **[RLS_SETUP_COMPLETE.md](RLS_SETUP_COMPLETE.md)** - Production-ready RLS setup ✅
+- [MEMORY_FINALIZATION_ANALYSIS.md](MEMORY_FINALIZATION_ANALYSIS.md) - How memory works
+- [PROPER_RLS_SETUP.md](PROPER_RLS_SETUP.md) - RLS architecture explained
+- [TESTING_COMPLETE_SESSION.md](TESTING_COMPLETE_SESSION.md) - Test results
+
 ---
 
 ## Key Features

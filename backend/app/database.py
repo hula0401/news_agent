@@ -17,12 +17,14 @@ class DatabaseManager:
         """Initialize Supabase client."""
         if self._initialized:
             return
-            
+
         try:
-            # Simple client creation without proxy or extra options
+            # Use service_role key for backend operations (bypasses RLS)
+            # This is required for operations like updating user_notes with RLS enabled
+            key = settings.supabase_service_key or settings.supabase_key
             self.client = create_client(
                 settings.supabase_url,
-                settings.supabase_key
+                key
             )
             self._initialized = True
             print("✅ Supabase client initialized successfully")
@@ -293,6 +295,10 @@ class DatabaseManager:
 
         Returns:
             True if successful, False otherwise
+
+        Note:
+            Requires unique constraint on user_id column.
+            Run: ALTER TABLE user_notes ADD CONSTRAINT user_notes_user_id_unique UNIQUE (user_id);
         """
         try:
             from datetime import datetime

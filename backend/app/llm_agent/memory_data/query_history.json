@@ -88,5 +88,75 @@
     "timestamp": "2025-11-05T08:38:14.380857",
     "summary": "I don't have current market data or recent news about QQQ (Invesco QQQ Trust ETF) in the provided information. The available sources only mention that QQQ trades during overnight sessions on the Blue Ocean ATS from 8 PM to 4 AM ET, Sunday through Thursday, and that returns are price return only without including dividends. Here are the key takeaways: QQQ tracks the Nasdaq-100 Index. Overnight trading available on Blue Ocean ATS. Returns don't include dividends",
     "memory_id": "mem_1762331894.380814"
+  },
+  {
+    "query": "What's the price of AAPL?",
+    "intent": "price_check",
+    "symbols": [
+      "AAPL"
+    ],
+    "timestamp": "2025-11-06T07:24:02.713137",
+    "summary": "Apple (AAPL) is currently trading at $270.14, up 0.57% with significant volume of 43.68 million shares. Here are the key takeaways: AAPL up 0.57% today. High trading volume of 43.68 million shares",
+    "memory_id": "mem_1762413842.713104"
+  },
+  {
+    "query": "What's the price of AAPL?",
+    "intent": "price_check",
+    "symbols": [
+      "AAPL"
+    ],
+    "timestamp": "2025-11-06T07:27:27.749911",
+    "summary": "Apple (AAPL) is currently trading at $270.14, up 0.57% with a volume of 43,682,972 shares. Here are the key takeaways: AAPL is up 0.57% today. Trading volume is at 43.68 million shares",
+    "memory_id": "mem_1762414047.749871"
+  },
+  {
+    "query": "What's the price of MSFT?",
+    "intent": "price_check",
+    "symbols": [
+      "MSFT"
+    ],
+    "timestamp": "2025-11-06T07:28:53.973462",
+    "summary": "Microsoft (MSFT) is currently trading at $507.16, down 1.20% from the previous close. Here are the key takeaways: Price decreased by 1.20%. Trading volume at 23,024,342 shares",
+    "memory_id": "mem_1762414133.973435"
+  },
+  {
+    "query": "tell me what's going on with tesla it's like you moving up this morning i don't know what's happened",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-06T08:44:44.343267",
+    "summary": "Tesla appears to be moving up this morning, likely driven by news of Elon Musk's $1 billion stock purchase which reinforces investor confidence in the EV maker. Here are the key takeaways: Elon Musk purchased $1 billion worth of Tesla stock, signaling his confidence in the company. This comes despite Tesla's US market share dropping to its lowest since 2017 as competition increases",
+    "memory_id": "mem_1762418684.34321"
+  },
+  {
+    "query": "What's AAPL price?",
+    "intent": "price_check",
+    "symbols": [
+      "AAPL"
+    ],
+    "timestamp": "2025-11-06T09:00:16.403042",
+    "summary": "Apple (AAPL) is currently trading at $270.14, up 0.57% with significant volume of 43.68 million shares. Here are the key takeaways: AAPL gained 0.57% in recent trading. High trading volume suggests active market interest. Price movement is modestly positive",
+    "memory_id": "mem_1762419616.402996"
+  },
+  {
+    "query": "What's AAPL price?",
+    "intent": "price_check",
+    "symbols": [
+      "AAPL"
+    ],
+    "timestamp": "2025-11-06T09:02:25.420318",
+    "summary": "Apple (AAPL) is currently trading at $270.14, up 0.57% with significant volume of 43.68 million shares. Here are the key takeaways: AAPL gained 0.57% in the current session. High trading volume of 43.68 million shares indicates active trading interest",
+    "memory_id": "mem_1762419745.420292"
+  },
+  {
+    "query": "What's MSFT price?",
+    "intent": "price_check",
+    "symbols": [
+      "MSFT"
+    ],
+    "timestamp": "2025-11-06T09:02:48.528682",
+    "summary": "Microsoft (MSFT) is currently trading at $507.16, down 1.20% with a volume of 23,024,342 shares. Here are the key takeaways: Price decreased by 1.20%. High trading volume at 23 million shares",
+    "memory_id": "mem_1762419768.528657"
   }
 ]
