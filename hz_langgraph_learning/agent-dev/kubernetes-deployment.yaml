@@ -1,0 +1,194 @@
+# Kubernetes Deployment Configuration for Market Assistant Agent on GKE
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: market-assistant
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: market-assistant-secrets
+  namespace: market-assistant
+type: Opaque
+stringData:
+  # IMPORTANT: Replace these with your actual API keys before deploying
+  # Or use Google Secret Manager and configure workload identity
+  OPENAI_API_KEY: "your-openai-api-key"
+  TAVILY_API_KEY: "your-tavily-api-key"
+  ALPHAVANTAGE_API_KEY: "your-alphavantage-api-key"
+  LANGSMITH_API_KEY: "your-langsmith-api-key"  # Optional, for tracing
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-assistant-config
+  namespace: market-assistant
+data:
+  PORT: "8080"
+  HOST: "0.0.0.0"
+  LOG_LEVEL: "info"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-assistant
+  namespace: market-assistant
+  labels:
+    app: market-assistant
+    version: v1
+spec:
+  replicas: 2  # Start with 2 replicas for HA
+  selector:
+    matchLabels:
+      app: market-assistant
+  template:
+    metadata:
+      labels:
+        app: market-assistant
+        version: v1
+    spec:
+      containers:
+      - name: market-assistant
+        image: gcr.io/YOUR_PROJECT_ID/market-assistant:latest  # Replace with your GCR image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: market-assistant-config
+              key: PORT
+        - name: HOST
+          valueFrom:
+            configMapKeyRef:
+              name: market-assistant-config
+              key: HOST
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: market-assistant-secrets
+              key: OPENAI_API_KEY
+        - name: TAVILY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: market-assistant-secrets
+              key: TAVILY_API_KEY
+        - name: ALPHAVANTAGE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: market-assistant-secrets
+              key: ALPHAVANTAGE_API_KEY
+        - name: LANGSMITH_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: market-assistant-secrets
+              key: LANGSMITH_API_KEY
+              optional: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: market-assistant-service
+  namespace: market-assistant
+  labels:
+    app: market-assistant
+spec:
+  type: LoadBalancer  # Change to ClusterIP if using Ingress
+  selector:
+    app: market-assistant
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: market-assistant-hpa
+  namespace: market-assistant
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: market-assistant
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Optional: Ingress for HTTPS with Google Cloud Load Balancer
+# Uncomment and configure if you want managed SSL certificates
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: market-assistant-ingress
+#   namespace: market-assistant
+#   annotations:
+#     kubernetes.io/ingress.class: "gce"
+#     kubernetes.io/ingress.global-static-ip-name: "market-assistant-ip"
+#     networking.gke.io/managed-certificates: "market-assistant-cert"
+#     kubernetes.io/ingress.allow-http: "false"
+# spec:
+#   rules:
+#   - host: api.yourdomain.com
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: market-assistant-service
+#             port:
+#               number: 80
