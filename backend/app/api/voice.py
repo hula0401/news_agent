@@ -51,7 +51,7 @@ async def process_text_command(
     try:
         # Process the command through the agent
         result = await agent.process_text_command(
-            command=request.command,
+            query=request.command,
             user_id=request.user_id,
             session_id=request.session_id
         )

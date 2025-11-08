@@ -94,6 +94,15 @@ async def lifespan(app: FastAPI):
             else:
                 logger.info("ℹ️ Background scheduler disabled via configuration")
 
+            # Start heartbeat monitor for session lifecycle
+            try:
+                from .core.heartbeat_monitor import get_heartbeat_monitor
+                heartbeat_monitor = get_heartbeat_monitor()
+                heartbeat_monitor.start()
+                logger.info("✅ Heartbeat monitor started")
+            except Exception as e:
+                logger.warning(f"⚠️ Heartbeat monitor initialization failed: {e}")
+
             logger.info("🎉 Backend startup complete!")
             
         except Exception as e:
@@ -108,23 +117,66 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down Voice News Agent Backend...")
 
-    # Close all active sessions in database
+    # Finalize all active memory sessions (post-run memory updates)
+    logger.info("💾 Finalizing memory for active sessions...")
     try:
-        from .database import get_database
-        db = await get_database()
-        if db._initialized:
-            def _close_sessions():
-                return db.client.table("conversation_sessions").update({
-                    "is_active": False,
-                    "session_end": datetime.utcnow().isoformat(),
-                    "ended_at": datetime.utcnow().isoformat()
-                }).eq("is_active", True).execute()
+        from .core.agent_wrapper_langgraph import get_agent
+        agent = await get_agent()
 
-            result = await asyncio.to_thread(_close_sessions)
-            closed_count = len(result.data) if result.data else 0
-            logger.info(f"✅ Closed {closed_count} active sessions")
+        # Get all active user sessions that need memory finalization
+        active_sessions = [(user_id, memory) for user_id, memory in agent.user_memories.items()
+                          if memory.current_session_id]
+
+        logger.info(f"Found {len(active_sessions)} active sessions to finalize")
+
+        finalized_count = 0
+        for user_id, memory in active_sessions:
+            try:
+                logger.info(f"Finalizing session {memory.current_session_id} for user {user_id[:8]}...")
+                # Add timeout to avoid hanging
+                await asyncio.wait_for(
+                    agent.finalize_session(user_id, memory.current_session_id),
+                    timeout=30.0  # 30 second timeout per user
+                )
+                finalized_count += 1
+                logger.info(f"✅ Finalized memory for user {user_id[:8]}...")
+            except asyncio.TimeoutError:
+                logger.warning(f"⚠️ Timeout finalizing memory for user {user_id[:8]}...")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to finalize memory for user {user_id[:8]}...: {e}", exc_info=True)
+
+        if finalized_count > 0:
+            logger.info(f"✅ Finalized {finalized_count} user memory sessions")
+            # Give user time to see the message
+            print("\n" + "="*80)
+            print(f"💾 Memory updates complete for {finalized_count} users")
+            print("="*80 + "\n")
+        else:
+            logger.info("No active sessions required finalization")
     except Exception as e:
-        logger.warning(f"⚠️ Session cleanup error: {e}")
+        logger.warning(f"⚠️ Memory finalization error: {e}", exc_info=True)
+
+    # Close all active sessions in database (non-blocking, background task)
+    async def _cleanup_sessions_bg():
+        try:
+            from .database import get_database
+            db = await get_database()
+            if db._initialized:
+                def _close_sessions():
+                    return db.client.table("conversation_sessions").update({
+                        "is_active": False,
+                        "session_end": datetime.utcnow().isoformat(),
+                        "ended_at": datetime.utcnow().isoformat()
+                    }).eq("is_active", True).execute()
+
+                result = await asyncio.to_thread(_close_sessions)
+                closed_count = len(result.data) if result.data else 0
+                logger.info(f"✅ Closed {closed_count} active sessions in database")
+        except Exception as e:
+            logger.warning(f"⚠️ Session cleanup error: {e}")
+
+    # Run session cleanup in background (don't block shutdown)
+    asyncio.create_task(_cleanup_sessions_bg())
 
     # Stop conversation tracker (flush remaining messages)
     try:
@@ -134,6 +186,15 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Conversation tracker stopped")
     except Exception as e:
         logger.warning(f"⚠️ Conversation tracker shutdown error: {e}")
+
+    # Stop heartbeat monitor
+    try:
+        from .core.heartbeat_monitor import get_heartbeat_monitor
+        heartbeat_monitor = get_heartbeat_monitor()
+        await heartbeat_monitor.stop()
+        logger.info("✅ Heartbeat monitor stopped")
+    except Exception as e:
+        logger.warning(f"⚠️ Heartbeat monitor shutdown error: {e}")
 
     # Stop scheduler
     if settings.enable_scheduler:

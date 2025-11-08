@@ -42,6 +42,7 @@ Voice News Agent provides intelligent, context-aware news recommendations throug
 - ✅ Sessions properly close on WebSocket disconnect
 - ✅ Sessions properly close on server shutdown
 - ✅ Added conversation tracker to websocket_manager_v2
+- ✅ Fixed ASR blocking issue (made session tracking non-blocking) - [ASR_BLOCKING_FIX.md](ASR_BLOCKING_FIX.md)
 - ✅ Test coverage: 7/7 scenarios passing
 - **Result**: Clean database state (0 orphaned sessions)
 

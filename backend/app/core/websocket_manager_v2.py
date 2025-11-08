@@ -44,16 +44,20 @@ class AudioWebSocketManager:
 
         print(f"✅ [CONNECT] session={session_id[:8]}..., user={user_id[:8]}...")
 
-        # Start conversation session tracking in database
-        try:
-            await self.conversation_tracker.start_session(
-                session_id=session_id,
-                user_id=user_id,
-                metadata={"endpoint": "audio_websocket_v2"}
-            )
-            print(f"✅ [SESSION] Started tracking for session={session_id[:8]}...")
-        except Exception as e:
-            print(f"⚠️ [SESSION] Failed to start session tracking: {e}")
+        # Start conversation session tracking in database (non-blocking)
+        # Run in background to avoid blocking the connection handshake
+        async def _start_session_bg():
+            try:
+                await self.conversation_tracker.start_session(
+                    session_id=session_id,
+                    user_id=user_id,
+                    metadata={"endpoint": "audio_websocket_v2"}
+                )
+                print(f"✅ [SESSION] Started tracking for session={session_id[:8]}...")
+            except Exception as e:
+                print(f"⚠️ [SESSION] Failed to start session tracking: {e}")
+
+        asyncio.create_task(_start_session_bg())
 
         await self.send(session_id, {
             "event": "connected",
@@ -159,12 +163,12 @@ class AudioWebSocketManager:
             
             # Step 2: Get agent response
             print(f"🤖 [AGENT] Getting response...")
-            response_result = await self.agent.process_voice_command(
-                transcription, 
-                user_id, 
-                session_id
+            response_result = await self.agent.process_text_command(
+                user_id=user_id,
+                query=transcription,
+                session_id=session_id
             )
-            response_text = response_result.get("response_text", "I didn't understand that.")
+            response_text = response_result.get("response", "I didn't understand that.")
             print(f"💬 [AGENT] Response: '{response_text[:50]}...'")
             
             # Send agent response text
@@ -215,7 +219,39 @@ class AudioWebSocketManager:
                     "timestamp": datetime.now().isoformat()
                 }
             })
-    
+
+    async def handle_heartbeat(self, session_id: str):
+        """Update last_heartbeat_at timestamp for active session."""
+        try:
+            # Get database ID from session state
+            if session_id not in self.session_users:
+                print(f"⚠️  [HEARTBEAT] Session not found: {session_id[:8]}...")
+                return
+
+            # Update last_heartbeat_at in database (non-blocking)
+            async def _update_heartbeat():
+                try:
+                    from ..database import db_manager
+
+                    if not db_manager._initialized:
+                        await db_manager.initialize()
+
+                    def _update():
+                        return db_manager.client.table("conversation_sessions").update({
+                            "last_heartbeat_at": datetime.utcnow().isoformat()
+                        }).eq("session_id", session_id).execute()
+
+                    await asyncio.to_thread(_update)
+                    print(f"💓 [HEARTBEAT] Updated for session={session_id[:8]}...")
+                except Exception as e:
+                    print(f"❌ [HEARTBEAT ERROR] Failed to update: {e}")
+
+            # Run in background (don't block message processing)
+            asyncio.create_task(_update_heartbeat())
+
+        except Exception as e:
+            print(f"❌ [HEARTBEAT ERROR]: {e}")
+
     async def handle_message(self, session_id: str, message: str):
         """Handle incoming WebSocket message."""
         try:
@@ -225,6 +261,9 @@ class AudioWebSocketManager:
             
             if event == "audio_chunk":
                 await self.handle_audio_chunk(session_id, data.get("data", {}))
+            elif event == "heartbeat":
+                # Update last_heartbeat_at timestamp for session
+                await self.handle_heartbeat(session_id)
             elif event == "test":
                 # Echo test messages
                 await self.send(session_id, {

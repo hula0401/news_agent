@@ -28,8 +28,11 @@ from .prompts import (
 )
 from .logger import agent_logger
 from .logging_config import get_structured_logger
+from .session_logger import get_session_logger
+from .llm_limiter import llm_call_limiter
 
 logger = logging.getLogger(__name__)
+session_logger = get_session_logger()
 
 # ====== LLM SETUP ======
 llm = ChatOpenAI(
@@ -145,9 +148,10 @@ User query: {query}"""
         ]
         full_prompt_text = f"System: {GENERAL_SYSTEM_PROMPT}\n\nUser: {prompt}\n\nUser query: {query}"
 
-        # Measure LLM call time
+        # Measure LLM call time with concurrency limiter
         start_time = time.time()
-        response = await llm.ainvoke(full_messages)
+        async with llm_call_limiter("glm-4.5-flash (intent_analysis)"):
+            response = await llm.ainvoke(full_messages)
         duration_ms = int((time.time() - start_time) * 1000)
 
         # Log LLM call with new logger
@@ -157,6 +161,16 @@ User query: {query}"""
             response=response.content,
             model="glm-4.5-flash",
             latency_ms=duration_ms
+        )
+
+        # Log to session log
+        session_logger.log_llm_query(
+            session_id=state.thread_id,
+            model="glm-4.5-flash",
+            prompt=full_prompt_text,
+            response=response.content,
+            duration_ms=duration_ms,
+            stage="intent_analysis"
         )
 
         logger.info(f"✅ LLM response received ({duration_ms}ms, {len(response.content)} chars)")
@@ -534,7 +548,7 @@ async def node_parallel_fetcher(state: MarketState) -> MarketState:
 
             # Priority 3: General market news (macro, economic, political)
             news_apis.append("general_market_news")
-            api_tasks.append(("general_market_news", fetch_general_market_news(limit=10, use_cache=use_cache)))
+            api_tasks.append(("general_market_news", fetch_general_market_news(limit=15, use_cache=use_cache)))  # Increased from 10 to 15
             logger.info("✅ API Decision: General Market News selected (macro/econ/political)")
 
             selected_apis["news"] = news_apis
@@ -600,6 +614,16 @@ async def node_parallel_fetcher(state: MarketState) -> MarketState:
                 tool_output=result,
                 execution_time_ms=int(total_duration_ms / len(api_tasks)),  # Approximate per-tool time
                 success=True
+            )
+
+            # Also log to session logger
+            session_logger.log_tool_call(
+                session_id=state.thread_id,
+                tool_name=api_name,
+                input_data=input_params,
+                output_data=result,
+                duration_ms=int(total_duration_ms / len(api_tasks)),
+                status="SUCCESS"
             )
 
         # Log which APIs successfully returned data (with actual content in debug mode)
@@ -859,7 +883,7 @@ async def node_general_research(state: MarketState) -> MarketState:
                 query=state.query,
                 symbols=state.symbols,
                 llm_keywords=state.keywords,
-                max_results=10,
+                max_results=15,  # Increased from 10 to 15
                 max_browse=5,
                 min_confidence=0.4,
             )
@@ -1070,9 +1094,10 @@ Respond naturally (no JSON format needed for chat)."""
 
             logger.info(f"🤖 Generating conversational response ({output_mode} mode)...")
 
-            # Measure LLM call time
+            # Measure LLM call time with concurrency limiter
             start_time = time.time()
-            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            async with llm_call_limiter("glm-4.5-flash (chat_response)"):
+                response = await llm.ainvoke([HumanMessage(content=prompt)])
             duration_ms = (time.time() - start_time) * 1000
 
             # Log detailed LLM query
@@ -1081,6 +1106,16 @@ Respond naturally (no JSON format needed for chat)."""
                 prompt=prompt,
                 response=response.content,
                 duration_ms=duration_ms,
+            )
+
+            # Also log to session logger
+            session_logger.log_llm_query(
+                session_id=state.thread_id,
+                model="glm-4.5-flash",
+                prompt=prompt,
+                response=response.content,
+                duration_ms=duration_ms,
+                stage="chat_response"
             )
 
             state.summary = response.content.strip()
@@ -1138,9 +1173,10 @@ Respond naturally (no JSON format needed for chat)."""
         ]
         full_prompt_text = f"System: {GENERAL_SYSTEM_PROMPT}\n\nUser: {prompt}"
 
-        # Measure LLM call time
+        # Measure LLM call time with concurrency limiter
         start_time = time.time()
-        response = await llm.ainvoke(full_messages)
+        async with llm_call_limiter("glm-4.5-flash (summary_generator)"):
+            response = await llm.ainvoke(full_messages)
         duration_ms = (time.time() - start_time) * 1000
 
         # Log detailed LLM query (COMPLETE input/output - NO TRUNCATION)
@@ -1149,6 +1185,16 @@ Respond naturally (no JSON format needed for chat)."""
             prompt=full_prompt_text,
             response=response.content,
             duration_ms=duration_ms,
+        )
+
+        # Also log to session logger
+        session_logger.log_llm_query(
+            session_id=state.thread_id,
+            model="glm-4.5-flash",
+            prompt=full_prompt_text,
+            response=response.content,
+            duration_ms=duration_ms,
+            stage="summary_generator"
         )
 
         logger.info(f"✅ Summary LLM response received ({duration_ms:.0f}ms, {len(response.content)} chars)")
@@ -1387,13 +1433,29 @@ async def node_response_generator(state: MarketState) -> MarketState:
             prompt = get_chat_response_prompt(state.chat_history, query, output_mode)
 
             logger.info(f"Generating conversational response ({output_mode} mode)...")
-            response = await llm.ainvoke([
-                SystemMessage(content=GENERAL_SYSTEM_PROMPT),
-                HumanMessage(content=prompt)
-            ])
+
+            # Measure LLM call time with concurrency limiter
+            start_time = time.time()
+            async with llm_call_limiter("glm-4.5-flash (chat_response_v2)"):
+                response = await llm.ainvoke([
+                    SystemMessage(content=GENERAL_SYSTEM_PROMPT),
+                    HumanMessage(content=prompt)
+                ])
+            duration_ms = (time.time() - start_time) * 1000
+
+            # Log to session logger
+            full_prompt = f"System: {GENERAL_SYSTEM_PROMPT}\n\nUser: {prompt}"
+            session_logger.log_llm_query(
+                session_id=state.thread_id,
+                model="glm-4.5-flash",
+                prompt=full_prompt,
+                response=response.content,
+                duration_ms=duration_ms,
+                stage="chat_response"
+            )
 
             state.summary = response.content.strip()
-            logger.info(f"✅ Generated chat response ({len(state.summary)} chars)")
+            logger.info(f"✅ Generated chat response ({duration_ms:.0f}ms, {len(state.summary)} chars)")
 
             # No memory for pure chat
             return state
@@ -1514,9 +1576,10 @@ async def node_response_generator(state: MarketState) -> MarketState:
         ]
         full_prompt_text = f"System: {GENERAL_SYSTEM_PROMPT}\n\nUser: {prompt}"
 
-        # Measure LLM call time
+        # Measure LLM call time with concurrency limiter
         start_time = time.time()
-        response = await llm.ainvoke(full_messages)
+        async with llm_call_limiter("glm-4.5-flash (summary_generator)"):
+            response = await llm.ainvoke(full_messages)
         duration_ms = (time.time() - start_time) * 1000
 
         # Log detailed LLM query (COMPLETE input/output - NO TRUNCATION)
@@ -1525,6 +1588,16 @@ async def node_response_generator(state: MarketState) -> MarketState:
             prompt=full_prompt_text,
             response=response.content,
             duration_ms=duration_ms,
+        )
+
+        # Also log to session logger
+        session_logger.log_llm_query(
+            session_id=state.thread_id,
+            model="glm-4.5-flash",
+            prompt=full_prompt_text,
+            response=response.content,
+            duration_ms=duration_ms,
+            stage="summary_generator"
         )
 
         logger.info(f"✅ Summary LLM response received ({duration_ms:.0f}ms, {len(response.content)} chars)")

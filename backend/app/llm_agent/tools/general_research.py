@@ -119,7 +119,7 @@ async def browse_url(url: str, max_length: int = 5000, timeout: int = 10000) -> 
 
             # Navigate to URL
             await page.goto(url, timeout=timeout, wait_until="domcontentloaded")
-            await page.wait_for_timeout(1000)  # Wait for JS
+            await page.wait_for_timeout(1200)  # Wait for JS (increased from 1000ms)
 
             # Get title
             title = await page.title()

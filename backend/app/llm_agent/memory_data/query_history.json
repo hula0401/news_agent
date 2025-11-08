@@ -158,5 +158,95 @@
     "timestamp": "2025-11-06T09:02:48.528682",
     "summary": "Microsoft (MSFT) is currently trading at $507.16, down 1.20% with a volume of 23,024,342 shares. Here are the key takeaways: Price decreased by 1.20%. High trading volume at 23 million shares",
     "memory_id": "mem_1762419768.528657"
+  },
+  {
+    "query": "tell me what's going on with tesa",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-07T07:58:05.245460",
+    "summary": "Limited information available about Tesla (TSLA). The available data references overnight trading on the Blue Ocean ATS (8 PM to 4 AM ET, Sunday through Thursday), but no specific price movements or recent news were found in the sources. Here are the key takeaways: Tesla trades on Blue Ocean ATS during overnight sessions. Research confidence is low - limited relevant sources found. No specific price data or recent company news available",
+    "memory_id": "mem_1762502285.245383"
+  },
+  {
+    "query": "what happened to tessa",
+    "intent": "news_search",
+    "symbols": [
+      "TESSA"
+    ],
+    "timestamp": "2025-11-07T09:07:25.648992",
+    "summary": "Julius Tessa FIFM C Priv (0P00018GBF.SA) is a Brazilian financial instrument trading on the S\u00e3o Paulo stock exchange. It's currently trading at BRL 213.45, down 0.14 (-0.07%) at the close on October 24. The instrument appears to be related to Julius Baer Family Office Brasil Gest\u00e3o de Patrim\u00f4nio Ltda. and has connections to Kinetics Spin-Off and Corporate Rest funds. Here are the key takeaways: Slight decline of 0.07% in recent trading. Related to Julius Baer Family Office Brasil. Connected to Kinetics Spin-Off and Corporate Rest funds",
+    "memory_id": "mem_1762506445.648958"
+  },
+  {
+    "query": "i mean what's happened to tesla tsla",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-07T09:10:28.560765",
+    "summary": "Tesla (TSLA) is trading at $445.91, down 3.54% at the close on November 6, but showing recovery with a 2.15% gain in pre-market trading to $455.50. The stock is experiencing volatility with questions about whether it represents a risk or rebound opportunity. Here are the key takeaways: Stock closed down 3.54% but up 2.15% in pre-market trading. Financial news questioning if TSLA represents risk or rebound opportunity. High institutional ownership at 49.47%. Significant insider ownership at 12.56%",
+    "memory_id": "mem_1762506628.560703"
+  },
+  {
+    "query": "what is META price?",
+    "intent": "price_check",
+    "symbols": [
+      "META"
+    ],
+    "timestamp": "2025-11-07T17:55:57.893313",
+    "summary": "META is currently trading at $608.69 with no change (+0.00%). Here are the key takeaways: Price unchanged at $608.69. Volume: 17,870,644 shares",
+    "memory_id": "mem_1762538157.89328"
+  },
+  {
+    "query": "what is TSLA price today?",
+    "intent": "price_check",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-07T18:01:13.523026",
+    "summary": "Tesla (TSLA) is currently trading at $427.71 with no change (+0.00%). Here are the key takeaways: Current price: $427.71. No price change today. High volume: 66,049,002 shares",
+    "memory_id": "mem_1762538473.522994"
+  },
+  {
+    "query": "what is TSLA price?",
+    "intent": "price_check",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-07T18:08:04.459401",
+    "summary": "Tesla (TSLA) is currently trading at $427.29 with no change (+0.00%). Here are the key takeaways: Price unchanged at $427.29. High trading volume at 66.8M shares",
+    "memory_id": "mem_1762538884.459314"
+  },
+  {
+    "query": "what is TSLA stock price today?",
+    "intent": "price_check",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-07T18:26:46.942974",
+    "summary": "Tesla (TSLA) is currently trading at $428.85 today with no change (+0.00%). Here are the key takeaways: TSLA trading flat with no price movement. High trading volume of 68,970,427 shares",
+    "memory_id": "mem_1762540006.942914"
+  },
+  {
+    "query": "what is AAPL price?",
+    "intent": "price_check",
+    "symbols": [
+      "AAPL"
+    ],
+    "timestamp": "2025-11-07T18:29:34.322946",
+    "summary": "Apple (AAPL) is currently trading at $268.46 with no change in price. Here are the key takeaways: AAPL price: $268.46. No price change (+0.00%). Trading volume: 24,853,901 shares",
+    "memory_id": "mem_1762540174.322887"
+  },
+  {
+    "query": "tell me what happened to tesla",
+    "intent": "news_search",
+    "symbols": [
+      "TSLA"
+    ],
+    "timestamp": "2025-11-08T03:46:13.101327",
+    "summary": "Tesla stock closed at $429.52, down $16.39 (3.68%) at 4:00 PM EST. The stock has experienced a notable decline in recent trading. Here are the key takeaways: Tesla closed down 3.68% at $429.52. Stock dropped $16.39 from previous close. This represents a significant daily decline for TSLA",
+    "memory_id": "mem_1762573573.101246"
   }
 ]

@@ -86,6 +86,7 @@
 - [ ] **Memory optimization** - Profile and reduce backend memory usage
 
 ### Low Priority
+- [ ] **Multiple LLM requests for single query** - Progressive ASR sends multiple audio chunks as user speaks, each creating new agent session → multiple concurrent LLM calls → rate limit (429). NOT connection-related. Solutions: (1) Debounce transcriptions with 500ms window, (2) Deduplicate sessions by user+query hash, (3) Use single session per user. See `MULTIPLE_ISSUES_EXPLANATION.md` for details. **Status:** Low priority, documented for future optimization.
 - [ ] **API versioning** - Prepare for v2 API
 - [ ] **GraphQL API** - Consider GraphQL for flexible queries
 - [ ] **Admin dashboard** - Monitor users, usage, errors
@@ -209,6 +210,7 @@
 - **Cold start** - Render free tier has 30-60s cold start
 
 ### Low
+- **Multiple LLM requests per query** - Progressive ASR causes multiple concurrent LLM calls for single utterance, leading to rate limit (429). Root cause: Each audio chunk creates new agent session. NOT connection-related. See `MULTIPLE_ISSUES_EXPLANATION.md`. Solutions documented in "Technical Debt & Improvements" section.
 - **Audio quality** - TTS streaming could use better codec
 - **Logs verbose** - Too many debug logs in production
 

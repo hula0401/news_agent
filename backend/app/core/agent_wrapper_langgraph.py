@@ -95,16 +95,31 @@ class LangGraphAgentWrapper:
         try:
             # Import logging system
             from ..llm_agent.logger import agent_logger
+            from ..llm_agent.session_logger import get_session_logger
 
-            # Start session logging
+            # Start session logging (both JSONL and detailed session logs)
             agent_logger.start_session(
                 session_id=session_id,
                 user_id=user_id,
                 metadata={"source": "text_command"}
             )
 
+            # Start detailed session log
+            session_logger = get_session_logger()
+            session_logger.start_session(
+                session_id=session_id,
+                user_id=user_id,
+                initial_query=query,
+                metadata={"source": "text_command"}
+            )
+
             # Log query received
             agent_logger.log_query_received(query, source="api")
+            session_logger.log_user_query(
+                session_id=session_id,
+                query=query,
+                source="text_command"
+            )
 
             # Get memory for user
             memory = await self._get_memory_for_user(user_id)
@@ -143,13 +158,19 @@ class LangGraphAgentWrapper:
                 self.session_chat_history[session_id] = chat_history[-10:]
 
             # Track in memory (if not chat/unknown intent)
-            if result.get("intent") not in ["chat", "unknown"]:
+            intent_value = result.get("intent", "unknown")
+            logger.info(f"📊 Checking memory tracking: intent={intent_value}, result_keys={list(result.keys())[:10]}")
+
+            if intent_value not in ["chat", "unknown"]:
+                logger.info(f"✅ Tracking conversation in memory (intent={intent_value})")
                 memory.track_conversation(
                     query=query,
-                    intent=result.get("intent"),
+                    intent=intent_value,
                     symbols=result.get("symbols", []),
                     summary=response_text
                 )
+            else:
+                logger.info(f"⏭️  Skipping memory tracking (intent={intent_value})")
 
             # Log response
             agent_logger.log_response_sent(
@@ -162,8 +183,20 @@ class LangGraphAgentWrapper:
                 }
             )
 
+            # Log agent response to session log
+            session_logger.log_agent_response(
+                session_id=session_id,
+                response=response_text,
+                sentiment=result.get("sentiment", "neutral"),
+                key_insights=result.get("key_insights", []),
+                processing_time_ms=processing_time_ms
+            )
+
             return {
                 "response": result.get("summary", ""),
+                "response_text": response_text,  # For API compatibility
+                "response_type": "market_data" if result.get("symbols") else "general",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
                 "intent": result.get("intent", "unknown"),
                 "symbols": result.get("symbols", []),
                 "raw_data": result.get("raw_data", {}),

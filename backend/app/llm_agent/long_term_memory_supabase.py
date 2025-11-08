@@ -32,6 +32,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
+from .llm_limiter import llm_call_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ class LongTermMemory:
         self.session_symbols = []
         self.session_intents = []
         self.session_summaries = []
-        logger.info(f"🎬 Started memory tracking for session: {session_id}")
+        logger.info(f"🎬 MEMORY: Started memory tracking for session: {session_id} (user {self.user_id[:8]}...)")
 
     def track_conversation(
         self,
@@ -107,7 +108,7 @@ class LongTermMemory:
             summary: Agent response summary
         """
         if not self.current_session_id:
-            logger.warning("⚠️  No active session - call start_session() first")
+            logger.warning("⚠️  MEMORY: No active session - call start_session() first")
             return
 
         self.session_queries.append(query)
@@ -115,22 +116,26 @@ class LongTermMemory:
         self.session_symbols.extend(symbols)
         self.session_summaries.append(summary)
 
-        logger.debug(f"📝 Tracked conversation: intent={intent}, symbols={symbols}")
+        logger.info(f"📝 MEMORY: Tracked conversation (session={self.current_session_id}, user={self.user_id[:8]}..., total_queries={len(self.session_queries)}): intent={intent}, symbols={symbols}")
 
     async def finalize_session(self):
         """Finalize session and update memory with LLM summarization.
 
         This analyzes the entire session and updates category-based key notes.
         """
+        logger.info(f"🔍 finalize_session called - current_session_id={self.current_session_id}, queries={len(self.session_queries)}")
+
         if not self.current_session_id:
             logger.warning("⚠️  No active session to finalize")
             return
 
         if not self.session_queries:
-            logger.info("ℹ️  No queries in session - skipping memory update")
+            logger.warning(f"⚠️  No queries in session {self.current_session_id} - skipping memory update")
             return
 
         logger.info(f"💾 Finalizing session {self.current_session_id} - analyzing {len(self.session_queries)} queries")
+
+        session_id_for_log = self.current_session_id  # Save before clearing
 
         try:
             # Analyze session with LLM and update key notes
@@ -138,6 +143,7 @@ class LongTermMemory:
 
             if updated_notes:
                 # Merge with existing notes
+                old_notes = self.key_notes.copy()
                 self.key_notes.update(updated_notes)
 
                 # Save to Supabase
@@ -145,6 +151,14 @@ class LongTermMemory:
 
                 if success:
                     logger.info(f"✅ Memory updated: {list(updated_notes.keys())}")
+
+                    # Write post-run log
+                    self._write_post_run_log(
+                        session_id=session_id_for_log,
+                        old_notes=old_notes,
+                        updated_notes=updated_notes,
+                        final_notes=self.key_notes
+                    )
                 else:
                     logger.error("❌ Failed to save memory to Supabase")
             else:
@@ -211,7 +225,8 @@ If no significant interests detected, return empty object: {{}}
 """
 
         try:
-            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            async with llm_call_limiter("glm-4.5-flash (memory_summarizer)"):
+                response = await llm.ainvoke([HumanMessage(content=prompt)])
             content = response.content.strip()
 
             # Clean control characters
@@ -234,6 +249,94 @@ If no significant interests detected, return empty object: {{}}
         except Exception as e:
             logger.error(f"❌ Error in LLM summarization: {e}")
             return {}
+
+    def _write_post_run_log(
+        self,
+        session_id: str,
+        old_notes: Dict[str, str],
+        updated_notes: Dict[str, str],
+        final_notes: Dict[str, str]
+    ):
+        """Write post-run log with memory updates.
+
+        Args:
+            session_id: Session identifier
+            old_notes: Notes before update
+            updated_notes: Notes that were changed/added
+            final_notes: Final merged notes
+        """
+        from pathlib import Path
+        from datetime import datetime
+        import json
+
+        logger.info(f"📝 Writing post-run log for session {session_id}")
+
+        try:
+            # Create logs/agent/session directory
+            # backend/app/llm_agent/long_term_memory_supabase.py -> backend/logs/agent/session
+            log_dir = Path(__file__).parent.parent.parent / "logs" / "agent" / "session"
+            log_dir.mkdir(parents=True, exist_ok=True)
+
+            log_file = log_dir / f"{session_id}_post-run.log"
+
+            content = f"""{'='*80}
+POST-RUN MEMORY UPDATE
+{'='*80}
+Session ID: {session_id}
+User ID: {self.user_id}
+Timestamp: {datetime.now().isoformat()}
+
+Session Summary:
+- Queries: {len(self.session_queries)}
+- Symbols: {', '.join(list(set(self.session_symbols))) if self.session_symbols else 'None'}
+- Intents: {', '.join(list(set(self.session_intents))) if self.session_intents else 'None'}
+
+{'='*80}
+KEY NOTES UPDATES
+{'='*80}
+
+"""
+
+            # Show what changed
+            if updated_notes:
+                content += "Updated Categories:\n"
+                for category, note in updated_notes.items():
+                    old_value = old_notes.get(category, "(new)")
+                    if old_value != note:
+                        content += f"\n[{category.upper()}]\n"
+                        if old_value != "(new)":
+                            content += f"  Before: {old_value}\n"
+                        content += f"  After:  {note}\n"
+            else:
+                content += "No updates made.\n"
+
+            content += f"\n{'='*80}\n"
+            content += "FINAL KEY NOTES\n"
+            content += f"{'='*80}\n\n"
+
+            if final_notes:
+                for category, note in final_notes.items():
+                    content += f"**{category}**: {note}\n"
+            else:
+                content += "(No key notes)\n"
+
+            content += f"\n{'='*80}\n"
+            content += "SESSION QUERIES\n"
+            content += f"{'='*80}\n\n"
+
+            for i, query in enumerate(self.session_queries, 1):
+                content += f"{i}. {query}\n"
+
+            content += f"\n{'='*80}\n"
+
+            # Write to file
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            logger.info(f"✅ Post-run log written: {log_file}")
+
+        except Exception as e:
+            logger.error(f"❌ Failed to write post-run log: {e}")
 
     def get_user_context(self) -> str:
         """Get formatted memory context for including in prompts.

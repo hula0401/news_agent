@@ -68,6 +68,7 @@ export function ContinuousVoiceInterface({
   const vadCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldStartRecordingRef = useRef(false); // Flag to start recording after connection
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Audio format selection based on settings
   const useOpus = settings.use_compression && OpusUtils.isSupported();
@@ -301,6 +302,19 @@ export function ContinuousVoiceInterface({
         }
       }));
       console.log("🛑 Interrupt signal sent to backend");
+    }
+  }, []);
+
+  /**
+   * Send heartbeat signal to backend
+   * Keeps session alive by updating last_heartbeat_at timestamp
+   */
+  const sendHeartbeat = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        event: "heartbeat"
+      }));
+      console.log("💓 Heartbeat sent to backend");
     }
   }, []);
 
@@ -581,6 +595,32 @@ export function ContinuousVoiceInterface({
   }, [stopRecording, stopAudioPlayback]);
 
   /**
+   * Heartbeat management - send heartbeat every 60 seconds when connected
+   */
+  useEffect(() => {
+    if (isConnected && sessionIdRef.current) {
+      // Send initial heartbeat immediately upon connection
+      sendHeartbeat();
+
+      // Start heartbeat interval (every 60 seconds)
+      heartbeatIntervalRef.current = setInterval(() => {
+        sendHeartbeat();
+      }, 60000); // 60 seconds
+
+      console.log("💓 Heartbeat interval started (60s)");
+
+      return () => {
+        // Cleanup: Stop heartbeat interval when disconnected
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+          heartbeatIntervalRef.current = null;
+          console.log("💓 Heartbeat interval stopped");
+        }
+      };
+    }
+  }, [isConnected, sendHeartbeat]);
+
+  /**
    * Handle recording based on voice state
    * IMPORTANT: Keep VAD active even when agent is speaking to enable interruptions
    */
@@ -610,12 +650,24 @@ export function ContinuousVoiceInterface({
         pcmRecorderRef.current.stop();
       }
 
+      if (opusRecorderRef.current) {
+        opusRecorderRef.current.stop();
+      }
+
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
 
       if (isPlayingAudioRef.current && currentAudioSourceRef.current) {
         currentAudioSourceRef.current.stop();
+      }
+
+      if (vadCheckIntervalRef.current) {
+        clearInterval(vadCheckIntervalRef.current);
+      }
+
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
       }
 
       if (wsRef.current) {
